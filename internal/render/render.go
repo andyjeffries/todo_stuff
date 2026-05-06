@@ -1,0 +1,76 @@
+// Package render parses the embedded HTML templates and offers a tiny helper
+// for executing them against a response writer.
+//
+// Each page in templates/pages/ becomes its own *template.Template with all
+// layouts and partials parsed alongside it. The caller picks which top-level
+// layout block to execute by name (e.g. "auth", "app").
+package render
+
+import (
+	"bytes"
+	"fmt"
+	"html/template"
+	"io/fs"
+	"net/http"
+	"path"
+	"strings"
+)
+
+type Renderer struct {
+	pages map[string]*template.Template
+}
+
+func New(fsys fs.FS) (*Renderer, error) {
+	layoutFiles, err := fs.Glob(fsys, "templates/layouts/*.html")
+	if err != nil {
+		return nil, fmt.Errorf("glob layouts: %w", err)
+	}
+	partialFiles, err := fs.Glob(fsys, "templates/partials/*.html")
+	if err != nil {
+		return nil, fmt.Errorf("glob partials: %w", err)
+	}
+	pageFiles, err := fs.Glob(fsys, "templates/pages/*.html")
+	if err != nil {
+		return nil, fmt.Errorf("glob pages: %w", err)
+	}
+	if len(pageFiles) == 0 {
+		return nil, fmt.Errorf("render: no page templates found")
+	}
+
+	r := &Renderer{pages: make(map[string]*template.Template, len(pageFiles))}
+	for _, p := range pageFiles {
+		files := []string{p}
+		files = append(files, layoutFiles...)
+		files = append(files, partialFiles...)
+
+		tpl, err := template.New("").Funcs(funcMap).ParseFS(fsys, files...)
+		if err != nil {
+			return nil, fmt.Errorf("parse %s: %w", p, err)
+		}
+
+		name := strings.TrimSuffix(path.Base(p), ".html")
+		r.pages[name] = tpl
+	}
+	return r, nil
+}
+
+// Render executes the named layout from the page template tree. Output is
+// buffered so a template error never leaves a half-written response.
+func (r *Renderer) Render(w http.ResponseWriter, status int, page, layout string, data any) error {
+	tpl, ok := r.pages[page]
+	if !ok {
+		return fmt.Errorf("render: unknown page %q", page)
+	}
+	var buf bytes.Buffer
+	if err := tpl.ExecuteTemplate(&buf, layout, data); err != nil {
+		return fmt.Errorf("execute %s/%s: %w", page, layout, err)
+	}
+	w.Header().Set("Content-Type", "text/html; charset=utf-8")
+	w.WriteHeader(status)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+var funcMap = template.FuncMap{
+	"safeHTML": func(s string) template.HTML { return template.HTML(s) },
+}

@@ -7,12 +7,17 @@ import (
 	"net/http"
 	"os"
 	"os/signal"
+	"strconv"
 	"syscall"
 	"time"
 
+	"github.com/andyjessop/todostuff/internal/auth"
 	"github.com/andyjessop/todostuff/internal/database"
 	"github.com/andyjessop/todostuff/internal/handlers"
+	appmw "github.com/andyjessop/todostuff/internal/middleware"
+	"github.com/andyjessop/todostuff/internal/render"
 	"github.com/andyjessop/todostuff/migrations"
+	"github.com/andyjessop/todostuff/web"
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
 )
@@ -21,10 +26,9 @@ func main() {
 	logger := slog.New(slog.NewTextHandler(os.Stdout, &slog.HandlerOptions{Level: slog.LevelInfo}))
 	slog.SetDefault(logger)
 
-	dbPath := os.Getenv("DATABASE_PATH")
-	if dbPath == "" {
-		dbPath = "./data/todostuff.db"
-	}
+	dbPath := envOr("DATABASE_PATH", "./data/todostuff.db")
+	port := envOr("PORT", "8080")
+	cookieSecure := envBool("COOKIE_SECURE", false)
 
 	db, err := database.Open(dbPath)
 	if err != nil {
@@ -39,22 +43,38 @@ func main() {
 	}
 	logger.Info("database ready", "path", dbPath)
 
-	port := os.Getenv("PORT")
-	if port == "" {
-		port = "8080"
+	authSvc := auth.NewService(db, cookieSecure)
+
+	renderer, err := render.New(web.TemplateFS)
+	if err != nil {
+		logger.Error("init renderer", "err", err)
+		os.Exit(1)
 	}
+
+	h := handlers.New(authSvc, renderer)
 
 	r := chi.NewRouter()
 	r.Use(middleware.RequestID)
 	r.Use(middleware.RealIP)
 	r.Use(middleware.Logger)
 	r.Use(middleware.Recoverer)
+	r.Use(appmw.AllowHead)
 
+	// Public
 	r.Get("/health", handlers.Health)
+	r.Get("/login", h.LoginPage)
+	r.Post("/login", h.LoginSubmit)
 
-	staticDir := "./web/static"
-	fs := http.FileServer(http.Dir(staticDir))
-	r.Handle("/static/*", http.StripPrefix("/static/", fs))
+	// Static
+	staticFS := http.FileServer(http.Dir("./web/static"))
+	r.Handle("/static/*", http.StripPrefix("/static/", staticFS))
+
+	// Protected
+	r.Group(func(pr chi.Router) {
+		pr.Use(appmw.RequireAuth(authSvc))
+		pr.Post("/logout", h.Logout)
+		pr.Get("/today", h.Today)
+	})
 
 	srv := &http.Server{
 		Addr:              ":" + port,
@@ -80,4 +100,23 @@ func main() {
 	if err := srv.Shutdown(ctx); err != nil {
 		logger.Error("shutdown error", "err", err)
 	}
+}
+
+func envOr(key, def string) string {
+	if v := os.Getenv(key); v != "" {
+		return v
+	}
+	return def
+}
+
+func envBool(key string, def bool) bool {
+	v := os.Getenv(key)
+	if v == "" {
+		return def
+	}
+	b, err := strconv.ParseBool(v)
+	if err != nil {
+		return def
+	}
+	return b
 }
