@@ -163,11 +163,16 @@ func (t *Tasks) ListByView(ctx context.Context, userID string, view View) ([]mod
 // Inbox semantics deliberately diverge from the master plan: an Inbox task is
 // one with neither a project nor a due date — i.e. truly unprocessed work.
 // Once you give a task a project or a date you've already filed it.
+//
+// Note on `date(t.due_date)`: go-sqlite3 stores time.Time as a full
+// "YYYY-MM-DD HH:MM:SS+00:00" string, but we conceptually only care about
+// the date portion. SQLite's `date()` normalises both formats so the
+// comparison is correct regardless of how a row was written.
 func viewQuery(userID string, view View, now time.Time) (where, order string, args []any) {
 	today := now.Format("2006-01-02")
 	switch view {
 	case ViewToday:
-		return `t.user_id = ? AND t.completed_at IS NULL AND (t.due_date IS NULL OR t.due_date <= ?)`,
+		return `t.user_id = ? AND t.completed_at IS NULL AND (t.due_date IS NULL OR date(t.due_date) <= ?)`,
 			`t.due_time IS NULL, t.due_time, t.position`,
 			[]any{userID, today}
 	case ViewInbox:
@@ -175,7 +180,7 @@ func viewQuery(userID string, view View, now time.Time) (where, order string, ar
 			`t.position`,
 			[]any{userID}
 	case ViewUpcoming:
-		return `t.user_id = ? AND t.completed_at IS NULL AND t.due_date > ?`,
+		return `t.user_id = ? AND t.completed_at IS NULL AND date(t.due_date) > ?`,
 			`t.due_date, t.due_time IS NULL, t.due_time, t.position`,
 			[]any{userID, today}
 	case ViewLogbook:

@@ -87,20 +87,64 @@ var funcMap = template.FuncMap{
 		}
 		return s
 	},
+	"formatDueDate": formatDueDate,
+	"isOverdue": func(due time.Time) bool {
+		today := startOfDay(time.Now())
+		return startOfDay(due).Before(today)
+	},
+	"isToday": func(due time.Time) bool {
+		return startOfDay(due).Equal(startOfDay(time.Now()))
+	},
+	"formatDateInput": func(t time.Time) string { return t.Format("2006-01-02") },
 	// dict builds a map[string]any from alternating key/value pairs, so
 	// templates can pass multi-field data when invoking sub-templates.
-	"dict": func(values ...any) (map[string]any, error) {
-		if len(values)%2 != 0 {
-			return nil, fmt.Errorf("dict: odd number of arguments")
+	"dict": dictFunc,
+}
+
+// startOfDay returns midnight in t's own location. Day comparisons must
+// happen at the same wall-clock granularity as the user, not UTC.
+func startOfDay(t time.Time) time.Time {
+	t = t.Local()
+	return time.Date(t.Year(), t.Month(), t.Day(), 0, 0, 0, 0, t.Location())
+}
+
+// formatDueDate produces a Things-3-style label for a due date:
+//
+//	Yesterday / Today / Tomorrow within ±1 day,
+//	weekday name within the next 6 days (e.g. "Friday"),
+//	"3 May" for past or further future dates within the same year,
+//	"3 May 2027" beyond.
+func formatDueDate(due time.Time) string {
+	today := startOfDay(time.Now())
+	d := startOfDay(due)
+	delta := int(d.Sub(today).Hours() / 24)
+	switch {
+	case delta == 0:
+		return "Today"
+	case delta == 1:
+		return "Tomorrow"
+	case delta == -1:
+		return "Yesterday"
+	case delta > 1 && delta <= 6:
+		return d.Format("Monday")
+	}
+	if d.Year() == today.Year() {
+		return d.Format("2 Jan")
+	}
+	return d.Format("2 Jan 2006")
+}
+
+func dictFunc(values ...any) (map[string]any, error) {
+	if len(values)%2 != 0 {
+		return nil, fmt.Errorf("dict: odd number of arguments")
+	}
+	out := make(map[string]any, len(values)/2)
+	for i := 0; i < len(values); i += 2 {
+		key, ok := values[i].(string)
+		if !ok {
+			return nil, fmt.Errorf("dict: key %d is not a string", i)
 		}
-		out := make(map[string]any, len(values)/2)
-		for i := 0; i < len(values); i += 2 {
-			key, ok := values[i].(string)
-			if !ok {
-				return nil, fmt.Errorf("dict: key %d is not a string", i)
-			}
-			out[key] = values[i+1]
-		}
-		return out, nil
-	},
+		out[key] = values[i+1]
+	}
+	return out, nil
 }

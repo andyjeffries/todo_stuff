@@ -5,6 +5,7 @@ import (
 	"errors"
 	"log/slog"
 	"net/http"
+	"net/url"
 	"strings"
 	"time"
 
@@ -34,8 +35,51 @@ type taskRowData struct {
 // header (set by HTMX on every request) to detect when the user is on a
 // /projects/{id} page.
 func hideProjectForRequest(r *http.Request) bool {
-	url := r.Header.Get("Hx-Current-Url")
-	return strings.Contains(url, "/projects/")
+	u := r.Header.Get("Hx-Current-Url")
+	return strings.Contains(u, "/projects/")
+}
+
+// taskBelongsToCurrentView reports whether the given task should still be
+// visible in the list rendered at hxCurrentURL. Used by the detail-panel
+// update flow to decide between an in-place row replacement (still belongs)
+// and an OOB delete swap (no longer belongs — slide the row out).
+//
+// Mirrors the SQL filters in services.viewQuery, kept narrow on purpose so
+// behaviour stays in one place. Returns true for unknown / non-list URLs so
+// the caller defaults to a harmless replace.
+func taskBelongsToCurrentView(task *models.Task, hxCurrentURL string, now time.Time) bool {
+	if hxCurrentURL == "" {
+		return true
+	}
+	u, err := url.Parse(hxCurrentURL)
+	if err != nil {
+		return true
+	}
+	p := u.Path
+	today := now.Format("2006-01-02")
+	dueKey := ""
+	if task.DueDate.Valid {
+		dueKey = task.DueDate.Time.Format("2006-01-02")
+	}
+
+	if strings.HasPrefix(p, "/projects/") {
+		pid := strings.TrimPrefix(p, "/projects/")
+		return !task.CompletedAt.Valid &&
+			task.ProjectID.Valid && task.ProjectID.String == pid
+	}
+	switch p {
+	case "/today":
+		return !task.CompletedAt.Valid && (!task.DueDate.Valid || dueKey <= today)
+	case "/inbox":
+		return !task.CompletedAt.Valid && !task.ProjectID.Valid && !task.DueDate.Valid
+	case "/upcoming":
+		return !task.CompletedAt.Valid && task.DueDate.Valid && dueKey > today
+	case "/anytime":
+		return !task.CompletedAt.Valid
+	case "/logbook":
+		return task.CompletedAt.Valid
+	}
+	return true
 }
 
 // TaskCreate handles POST /tasks. Returns the rendered task row partial so
@@ -137,6 +181,26 @@ func (h *Handlers) TaskUpdate(w http.ResponseWriter, r *http.Request) {
 		v := parseBool(r.PostFormValue("is_important"))
 		patch.IsImportant = &v
 	}
+	// Date/time inputs use the same _present marker pattern so an empty
+	// posted value reliably means "clear it" rather than "field absent".
+	dateIntent := r.PostForm.Has("due_date_present") || r.PostForm.Has("due_date")
+	timeIntent := r.PostForm.Has("due_time_present") || r.PostForm.Has("due_time")
+	if dateIntent {
+		raw := strings.TrimSpace(r.PostFormValue("due_date"))
+		if raw == "" {
+			patch.DueDate = &sql.NullTime{}
+			// Clearing the date implicitly clears the time. Force time clear
+			// regardless of what the (now-meaningless) time input says.
+			patch.DueTime = &sql.NullString{}
+			timeIntent = false
+		} else if dt, err := time.Parse("2006-01-02", raw); err == nil {
+			patch.DueDate = &sql.NullTime{Time: dt, Valid: true}
+		}
+	}
+	if timeIntent {
+		raw := strings.TrimSpace(r.PostFormValue("due_time"))
+		patch.DueTime = &sql.NullString{String: raw, Valid: raw != ""}
+	}
 
 	task, err := h.Tasks.Update(r.Context(), user.ID, id, patch)
 	if err != nil {
@@ -149,8 +213,19 @@ func (h *Handlers) TaskUpdate(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// OOB swap: replaces the matching list row in place while leaving the
-	// detail slide-over (the source of the PUT) untouched.
+	// OOB swap. If the task still belongs to the current view, replace the
+	// row in place (preserves scroll position, avoids flicker, keeps things
+	// like the Important star toggling instantly). If the update moved the
+	// task out of the current view's filter, send an OOB delete so the row
+	// slides out — e.g. setting a date on an Inbox task, or pushing a Today
+	// task to a future date.
+	hxURL := r.Header.Get("Hx-Current-Url")
+	if !taskBelongsToCurrentView(task, hxURL, time.Now()) {
+		if err := h.Render.Render(w, http.StatusOK, "today", "task-row-oob-delete", *task); err != nil {
+			slog.Error("render task-row-oob-delete", "err", err)
+		}
+		return
+	}
 	row := taskRowData{Task: *task, HideProject: hideProjectForRequest(r)}
 	if err := h.Render.Render(w, http.StatusOK, "today", "task-row-oob", row); err != nil {
 		slog.Error("render task-row-oob", "err", err)

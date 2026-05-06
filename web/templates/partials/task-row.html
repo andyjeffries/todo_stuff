@@ -39,10 +39,16 @@
   </div>
   {{$showProject := and (not $hide) $t.ProjectName.Valid}}
   {{if or $t.DueDate.Valid $showProject}}
-  <div class="mt-0.5 flex items-center gap-2 text-xs text-stone-400">
-    {{if $t.DueDate.Valid}}<span>{{formatDate $t.DueDate.Time}}{{if $t.DueTime.Valid}} · {{formatTime $t.DueTime.String}}{{end}}</span>{{end}}
+  <div class="mt-0.5 flex items-center gap-2 text-xs">
+    {{if $t.DueDate.Valid}}
+    {{$overdue := and (isOverdue $t.DueDate.Time) (not $t.CompletedAt.Valid)}}
+    <span class="inline-flex items-center gap-1 {{if $overdue}}text-rose-500{{else if isToday $t.DueDate.Time}}text-amber-600{{else}}text-stone-400{{end}}">
+      {{template "icon-calendar" "h-3 w-3 shrink-0"}}
+      {{formatDueDate $t.DueDate.Time}}{{if $t.DueTime.Valid}} · {{formatTime $t.DueTime.String}}{{end}}
+    </span>
+    {{end}}
     {{if $showProject}}
-    <span class="inline-flex items-center gap-1">
+    <span class="inline-flex items-center gap-1 text-stone-400">
       {{template "project-icon" (dict "Name" $t.ProjectIcon.String "Class" "h-3 w-3")}}
       <span class="truncate">{{$t.ProjectName.String}}</span>
     </span>
@@ -64,4 +70,15 @@
 <li id="task-{{.Task.ID}}" hx-swap-oob="outerHTML" class="group flex items-start gap-3 px-3 py-2 rounded-lg hover:bg-stone-100">
   {{template "task-row-body" .}}
 </li>
+{{end}}
+
+
+{{/*
+  task-row-oob-delete — empty <li> with `hx-swap-oob="delete"`. HTMX finds the
+  matching #task-{{.ID}} in the DOM and removes it. Used when a PUT changes
+  fields that move the task out of whatever view the user is currently on
+  (e.g. setting a date on an Inbox task; a tomorrow date on a Today task).
+*/}}
+{{define "task-row-oob-delete"}}
+<li id="task-{{.ID}}" hx-swap-oob="delete"></li>
 {{end}}

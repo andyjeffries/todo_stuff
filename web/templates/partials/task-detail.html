@@ -27,13 +27,35 @@
     </select>
   </div>
 
-  <dl class="space-y-2 text-sm">
-    {{if $task.DueDate.Valid}}
-    <div class="flex justify-between">
-      <dt class="text-stone-500">Due</dt>
-      <dd class="text-stone-700">{{formatDate $task.DueDate.Time}}{{if $task.DueTime.Valid}} · {{formatTime $task.DueTime.String}}{{end}}</dd>
+  <div data-due-fields class="space-y-2">
+    <label class="text-xs uppercase tracking-wider text-stone-500">When</label>
+    {{/* Hidden markers tell the server "the form intends to set these fields";
+         a cleared <input type="date"> posts an empty value, which the handler
+         translates to NULL. Without the marker, an HTMX swap that includes the
+         input but has it empty would be indistinguishable from "not in form". */}}
+    <input type="hidden" name="due_date_present" value="1">
+    <input type="hidden" name="due_time_present" value="1">
+    <div class="flex items-center gap-2">
+      <input type="date" name="due_date"
+             value="{{if $task.DueDate.Valid}}{{formatDateInput $task.DueDate.Time}}{{end}}"
+             class="flex-1 rounded-lg border border-stone-200 bg-stone-50 px-3 py-2 text-sm text-stone-700 focus:border-amber-400 focus:outline-none focus:ring-1 focus:ring-amber-200">
+      <input type="time" name="due_time"
+             value="{{if $task.DueTime.Valid}}{{slice $task.DueTime.String 0 5}}{{end}}"
+             class="w-28 rounded-lg border border-stone-200 bg-stone-50 px-3 py-2 text-sm text-stone-700 focus:border-amber-400 focus:outline-none focus:ring-1 focus:ring-amber-200">
     </div>
-    {{end}}
+    <div class="flex items-center gap-2 text-xs">
+      <button type="button" data-due-set="today"
+              class="rounded-md bg-stone-100 px-2 py-1 text-stone-600 hover:bg-amber-100 hover:text-amber-700">Today</button>
+      <button type="button" data-due-set="tomorrow"
+              class="rounded-md bg-stone-100 px-2 py-1 text-stone-600 hover:bg-amber-100 hover:text-amber-700">Tomorrow</button>
+      <button type="button" data-due-set="next-week"
+              class="rounded-md bg-stone-100 px-2 py-1 text-stone-600 hover:bg-amber-100 hover:text-amber-700">Next week</button>
+      <button type="button" data-due-set="clear"
+              class="ml-auto rounded-md px-2 py-1 text-stone-500 hover:text-rose-500">Clear</button>
+    </div>
+  </div>
+
+  <dl class="space-y-2 text-sm">
     <div class="flex justify-between">
       <dt class="text-stone-500">Created</dt>
       <dd class="text-stone-700">{{formatDate $task.CreatedAt}}</dd>

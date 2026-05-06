@@ -153,6 +153,54 @@
   window.TodoStuff.closeQuickAdd = close;
 })();
 
+// Due-date quick chips in the task detail panel. Click "Today" / "Tomorrow" /
+// "Next week" → set the date input; "Clear" → empty both date and time. After
+// updating the inputs, dispatch a `change` event so the form's existing
+// hx-trigger="change ... from:input" picks it up and PUTs.
+(function () {
+  function ymd(d) {
+    const y = d.getFullYear();
+    const m = String(d.getMonth() + 1).padStart(2, '0');
+    const day = String(d.getDate()).padStart(2, '0');
+    return `${y}-${m}-${day}`;
+  }
+
+  document.addEventListener('click', function (e) {
+    const btn = e.target.closest('[data-due-set]');
+    if (!btn) return;
+    e.preventDefault();
+    const fields = btn.closest('[data-due-fields]');
+    if (!fields) return;
+    const dateInput = fields.querySelector('input[name="due_date"]');
+    const timeInput = fields.querySelector('input[name="due_time"]');
+    if (!dateInput) return;
+
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+
+    switch (btn.dataset.dueSet) {
+      case 'today':
+        dateInput.value = ymd(today);
+        break;
+      case 'tomorrow': {
+        const d = new Date(today); d.setDate(d.getDate() + 1);
+        dateInput.value = ymd(d);
+        break;
+      }
+      case 'next-week': {
+        const d = new Date(today); d.setDate(d.getDate() + 7);
+        dateInput.value = ymd(d);
+        break;
+      }
+      case 'clear':
+        dateInput.value = '';
+        if (timeInput) timeInput.value = '';
+        break;
+    }
+    dateInput.dispatchEvent(new Event('change', { bubbles: true }));
+  });
+})();
+
 // Project icon picker. Click a [data-icon-id] button → write its ID into the
 // sibling hidden <input data-icon-input> and toggle the visual selected state
 // across the picker's buttons. Selected styling lives in classes that mirror
