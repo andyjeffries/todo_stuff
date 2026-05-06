@@ -32,6 +32,24 @@
 {{- else if eq $n "trophy"    }}{{template "icon-trophy" $cls}}
 {{- else if eq $n "archive-box" }}{{template "icon-archive-box" $cls}}
 {{- else if eq $n "star"      }}{{template "icon-star" $cls}}
+{{- else if eq $n "bell"      }}{{template "icon-bell" $cls}}
+{{- else if eq $n "bookmark"  }}{{template "icon-bookmark" $cls}}
+{{- else if eq $n "cake"      }}{{template "icon-cake" $cls}}
+{{- else if eq $n "chart-bar" }}{{template "icon-chart-bar" $cls}}
+{{- else if eq $n "chat-bubble" }}{{template "icon-chat-bubble" $cls}}
+{{- else if eq $n "clipboard" }}{{template "icon-clipboard" $cls}}
+{{- else if eq $n "clock"     }}{{template "icon-clock" $cls}}
+{{- else if eq $n "cog"       }}{{template "icon-cog" $cls}}
+{{- else if eq $n "credit-card" }}{{template "icon-credit-card" $cls}}
+{{- else if eq $n "envelope"  }}{{template "icon-envelope" $cls}}
+{{- else if eq $n "flag"      }}{{template "icon-flag" $cls}}
+{{- else if eq $n "globe"     }}{{template "icon-globe" $cls}}
+{{- else if eq $n "key"       }}{{template "icon-key" $cls}}
+{{- else if eq $n "lightbulb" }}{{template "icon-lightbulb" $cls}}
+{{- else if eq $n "newspaper" }}{{template "icon-newspaper" $cls}}
+{{- else if eq $n "phone"     }}{{template "icon-phone" $cls}}
+{{- else if eq $n "rocket"    }}{{template "icon-rocket" $cls}}
+{{- else if eq $n "users"     }}{{template "icon-users" $cls}}
 {{- else                      }}{{template "icon-folder" $cls}}
 {{- end -}}
 {{end}}
@@ -59,6 +77,24 @@
   {{template "project-icon-button" (dict "ID" "trophy"        "Selected" $selected)}}
   {{template "project-icon-button" (dict "ID" "archive-box"   "Selected" $selected)}}
   {{template "project-icon-button" (dict "ID" "star"          "Selected" $selected)}}
+  {{template "project-icon-button" (dict "ID" "bell"          "Selected" $selected)}}
+  {{template "project-icon-button" (dict "ID" "bookmark"      "Selected" $selected)}}
+  {{template "project-icon-button" (dict "ID" "clipboard"     "Selected" $selected)}}
+  {{template "project-icon-button" (dict "ID" "newspaper"     "Selected" $selected)}}
+  {{template "project-icon-button" (dict "ID" "lightbulb"     "Selected" $selected)}}
+  {{template "project-icon-button" (dict "ID" "chart-bar"     "Selected" $selected)}}
+  {{template "project-icon-button" (dict "ID" "credit-card"   "Selected" $selected)}}
+  {{template "project-icon-button" (dict "ID" "envelope"      "Selected" $selected)}}
+  {{template "project-icon-button" (dict "ID" "phone"         "Selected" $selected)}}
+  {{template "project-icon-button" (dict "ID" "chat-bubble"   "Selected" $selected)}}
+  {{template "project-icon-button" (dict "ID" "users"         "Selected" $selected)}}
+  {{template "project-icon-button" (dict "ID" "flag"          "Selected" $selected)}}
+  {{template "project-icon-button" (dict "ID" "rocket"        "Selected" $selected)}}
+  {{template "project-icon-button" (dict "ID" "clock"         "Selected" $selected)}}
+  {{template "project-icon-button" (dict "ID" "globe"         "Selected" $selected)}}
+  {{template "project-icon-button" (dict "ID" "cake"          "Selected" $selected)}}
+  {{template "project-icon-button" (dict "ID" "key"           "Selected" $selected)}}
+  {{template "project-icon-button" (dict "ID" "cog"           "Selected" $selected)}}
 </div>
 {{end}}
 
