@@ -10,7 +10,9 @@ import (
 	"syscall"
 	"time"
 
+	"github.com/andyjessop/todostuff/internal/database"
 	"github.com/andyjessop/todostuff/internal/handlers"
+	"github.com/andyjessop/todostuff/migrations"
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
 )
@@ -18,6 +20,24 @@ import (
 func main() {
 	logger := slog.New(slog.NewTextHandler(os.Stdout, &slog.HandlerOptions{Level: slog.LevelInfo}))
 	slog.SetDefault(logger)
+
+	dbPath := os.Getenv("DATABASE_PATH")
+	if dbPath == "" {
+		dbPath = "./data/todostuff.db"
+	}
+
+	db, err := database.Open(dbPath)
+	if err != nil {
+		logger.Error("open database", "err", err)
+		os.Exit(1)
+	}
+	defer db.Close()
+
+	if err := database.Migrate(db, migrations.FS); err != nil {
+		logger.Error("migrate database", "err", err)
+		os.Exit(1)
+	}
+	logger.Info("database ready", "path", dbPath)
 
 	port := os.Getenv("PORT")
 	if port == "" {
