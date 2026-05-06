@@ -59,6 +59,23 @@
   document.addEventListener('htmx:load', syncEmpty);
 })();
 
+// Refresh the active task list when the server signals a side-effect change.
+// The complete-task handler emits HX-Trigger: tasks-list-changed when a
+// recurring task's completion regenerated a new instance — the new instance
+// may belong to the current view (e.g. daily recurrence on /today), so we
+// re-fetch and let the server's filter decide. Pages without a #task-list
+// silently no-op.
+(function () {
+  document.body.addEventListener('tasks-list-changed', function () {
+    if (!document.getElementById('task-list') || typeof htmx === 'undefined') return;
+    htmx.ajax('GET', window.location.pathname, {
+      target: '#task-list',
+      swap: 'outerHTML',
+      select: '#task-list',
+    });
+  });
+})();
+
 // Generic [data-toggle] click handler: toggles `.hidden` on the targeted
 // element. Used by the sidebar "+ project" button and the project-page
 // edit/delete affordances.
@@ -202,6 +219,22 @@
         break;
     }
     dateInput.dispatchEvent(new Event('change', { bubbles: true }));
+  });
+})();
+
+// Recurrence frequency change → toggle visibility of the regeneration-type
+// radio group. When frequency is "" (Never) the type radios are meaningless
+// and just add visual noise; the form still submits all three fields and
+// the handler treats frequency="" as "remove rule".
+(function () {
+  document.addEventListener('change', function (e) {
+    const select = e.target;
+    if (!select.matches('select[name="recurrence_frequency"]')) return;
+    const fields = select.closest('[data-recurrence-fields]');
+    if (!fields) return;
+    const group = fields.querySelector('[data-recurrence-type-group]');
+    if (!group) return;
+    group.classList.toggle('hidden', select.value === '');
   });
 })();
 

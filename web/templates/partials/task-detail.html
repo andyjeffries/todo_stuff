@@ -57,6 +57,42 @@
     </div>
   </div>
 
+  {{$rule := .Rule}}
+  {{$freq := ""}}{{$interval := 1}}{{$type := "on_create"}}
+  {{if $rule}}{{$freq = $rule.Frequency}}{{$interval = $rule.Interval}}{{$type = $rule.RegenerationType}}{{end}}
+  <div data-recurrence-fields class="space-y-2">
+    <label class="text-xs uppercase tracking-wider text-stone-500">Repeat</label>
+    {{/* recurrence_present marks intent so the handler honours an empty
+         frequency as "remove rule" rather than "field absent". */}}
+    <input type="hidden" name="recurrence_present" value="1">
+    <div class="flex items-center gap-2">
+      <span class="text-sm text-stone-600">Every</span>
+      <input type="number" name="recurrence_interval" min="1" value="{{$interval}}"
+             class="h-10 w-16 appearance-none rounded-lg border border-stone-200 bg-stone-50 px-3 text-sm text-stone-700 focus:border-amber-400 focus:outline-none focus:ring-1 focus:ring-amber-200">
+      <select name="recurrence_frequency"
+              class="h-10 flex-1 rounded-lg border border-stone-200 bg-stone-50 px-3 text-sm text-stone-700 focus:border-amber-400 focus:outline-none focus:ring-1 focus:ring-amber-200">
+        <option value="" {{if eq $freq ""}}selected{{end}}>— never</option>
+        <option value="days" {{if eq $freq "days"}}selected{{end}}>day(s)</option>
+        <option value="weeks" {{if eq $freq "weeks"}}selected{{end}}>week(s)</option>
+        <option value="months" {{if eq $freq "months"}}selected{{end}}>month(s)</option>
+        <option value="years" {{if eq $freq "years"}}selected{{end}}>year(s)</option>
+      </select>
+    </div>
+    <div data-recurrence-type-group
+         class="flex items-center gap-4 text-xs text-stone-600 {{if eq $freq ""}}hidden{{end}}">
+      <label class="inline-flex items-center gap-1.5">
+        <input type="radio" name="recurrence_type" value="on_create" {{if eq $type "on_create"}}checked{{end}}
+               class="h-3.5 w-3.5 border-stone-300 text-amber-400 focus:ring-amber-300">
+        Fixed schedule
+      </label>
+      <label class="inline-flex items-center gap-1.5">
+        <input type="radio" name="recurrence_type" value="on_complete" {{if eq $type "on_complete"}}checked{{end}}
+               class="h-3.5 w-3.5 border-stone-300 text-amber-400 focus:ring-amber-300">
+        After completion
+      </label>
+    </div>
+  </div>
+
   <dl class="space-y-2 text-sm">
     <div class="flex justify-between">
       <dt class="text-stone-500">Created</dt>

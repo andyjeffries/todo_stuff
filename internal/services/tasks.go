@@ -309,25 +309,51 @@ func (t *Tasks) Update(ctx context.Context, userID, id string, p TaskPatch) (*mo
 
 // ----------------------------------------------------------- Complete/Uncomplete ---
 
-// Complete sets completed_at to "now" and returns the updated task.
-// Idempotent: completing an already-completed task leaves the original
-// completion timestamp in place.
-func (t *Tasks) Complete(ctx context.Context, userID, id string) (*models.Task, error) {
+// Complete sets completed_at to "now" and returns the updated task plus the
+// next instance if the task has a recurrence rule attached. The "generated"
+// return is nil when no regeneration happened (no rule, or this call was a
+// no-op against an already-completed task).
+//
+// On the active→completed transition, if the task has a recurrence rule
+// attached, the next instance is generated from the rule's template fields
+// with a freshly-computed due date. Repeated calls are no-ops for
+// regeneration; only the first one fires it.
+func (t *Tasks) Complete(ctx context.Context, userID, id string) (completed, generated *models.Task, err error) {
+	existing, err := t.Get(ctx, userID, id)
+	if err != nil {
+		return nil, nil, err
+	}
+
 	now := t.now()
 	res, err := t.db.ExecContext(ctx, `
         UPDATE tasks
-           SET completed_at = COALESCE(completed_at, ?),
+           SET completed_at = ?,
                updated_at = ?
-         WHERE id = ? AND user_id = ?`,
+         WHERE id = ? AND user_id = ? AND completed_at IS NULL`,
 		now, now, id, userID,
 	)
 	if err != nil {
-		return nil, fmt.Errorf("complete task: %w", err)
+		return nil, nil, fmt.Errorf("complete task: %w", err)
 	}
-	if n, _ := res.RowsAffected(); n == 0 {
-		return nil, ErrTaskNotFound
+	affected, _ := res.RowsAffected()
+	if affected == 0 {
+		// Already completed (Get above proved the task exists). Idempotent
+		// no-op — return current state without regenerating.
+		return existing, nil, nil
 	}
-	return t.Get(ctx, userID, id)
+
+	completed, err = t.Get(ctx, userID, id)
+	if err != nil {
+		return nil, nil, err
+	}
+
+	if completed.RecurrenceRuleID.Valid {
+		generated, err = t.regenerateNext(ctx, completed)
+		if err != nil {
+			return nil, nil, err
+		}
+	}
+	return completed, generated, nil
 }
 
 // Uncomplete clears completed_at, restoring the task to the active lists.

@@ -6,6 +6,7 @@ import (
 	"log/slog"
 	"net/http"
 	"net/url"
+	"strconv"
 	"strings"
 	"time"
 
@@ -16,10 +17,12 @@ import (
 )
 
 // taskDetailData wraps a task plus the user's projects for the detail-panel
-// project selector.
+// project selector. Rule is non-nil when the task has a recurrence rule
+// attached, so the detail-panel form can pre-select frequency/interval/type.
 type taskDetailData struct {
 	Task     models.Task
 	Projects []models.Project
+	Rule     *models.RecurrenceRule
 }
 
 // taskRowData is the wrapper shape that the task-row family of templates
@@ -116,10 +119,42 @@ func (h *Handlers) TaskCreate(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	if rec, ok := readRecurrenceFromForm(r); ok {
+		if err := h.Tasks.SetRecurrenceForTask(r.Context(), user.ID, task.ID, rec); err != nil {
+			slog.Error("set recurrence on create", "err", err)
+			http.Error(w, "could not set recurrence", http.StatusBadRequest)
+			return
+		}
+		// Re-fetch so the rendered row reflects RecurrenceRuleID.
+		if refreshed, err := h.Tasks.Get(r.Context(), user.ID, task.ID); err == nil {
+			task = refreshed
+		}
+	}
+
 	row := taskRowData{Task: *task, HideProject: hideProjectForRequest(r)}
 	if err := h.Render.Render(w, http.StatusOK, "today", "task-row", row); err != nil {
 		slog.Error("render task-row", "err", err)
 	}
+}
+
+// readRecurrenceFromForm pulls recurrence_* fields off the form. Returns
+// (params, true) when at least one recurrence field is present (so the
+// caller can apply or clear). Returns (_, false) when no recurrence intent
+// is on this request — the caller should leave any existing rule alone.
+func readRecurrenceFromForm(r *http.Request) (services.RecurrenceParams, bool) {
+	hasFreq := r.PostForm.Has("recurrence_frequency")
+	hasInterval := r.PostForm.Has("recurrence_interval")
+	hasType := r.PostForm.Has("recurrence_type")
+	hasPresent := r.PostForm.Has("recurrence_present")
+	if !hasFreq && !hasInterval && !hasType && !hasPresent {
+		return services.RecurrenceParams{}, false
+	}
+	interval, _ := strconv.Atoi(strings.TrimSpace(r.PostFormValue("recurrence_interval")))
+	return services.RecurrenceParams{
+		Frequency:        strings.TrimSpace(r.PostFormValue("recurrence_frequency")),
+		Interval:         interval,
+		RegenerationType: strings.TrimSpace(r.PostFormValue("recurrence_type")),
+	}, true
 }
 
 // TaskDetail handles GET /tasks/{id}. Returns the detail-panel partial
@@ -143,6 +178,13 @@ func (h *Handlers) TaskDetail(w http.ResponseWriter, r *http.Request) {
 		slog.Error("list projects for task detail", "err", err)
 	}
 	data := taskDetailData{Task: *task, Projects: projects}
+	if task.RecurrenceRuleID.Valid {
+		rule, err := h.Tasks.GetRule(r.Context(), user.ID, task.RecurrenceRuleID.String)
+		if err != nil && !errors.Is(err, services.ErrRuleNotFound) {
+			slog.Error("get recurrence rule for task detail", "err", err)
+		}
+		data.Rule = rule
+	}
 	if err := h.Render.Render(w, http.StatusOK, "today", "task-detail", data); err != nil {
 		slog.Error("render task-detail", "err", err)
 	}
@@ -213,6 +255,20 @@ func (h *Handlers) TaskUpdate(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// Apply any recurrence changes after the field update so the rule's
+	// template_* fields snapshot the *new* task state (renaming the task
+	// renames future instances too).
+	if rec, ok := readRecurrenceFromForm(r); ok {
+		if err := h.Tasks.SetRecurrenceForTask(r.Context(), user.ID, task.ID, rec); err != nil {
+			slog.Error("set recurrence on update", "err", err)
+			http.Error(w, "could not update recurrence", http.StatusBadRequest)
+			return
+		}
+		if refreshed, err := h.Tasks.Get(r.Context(), user.ID, task.ID); err == nil {
+			task = refreshed
+		}
+	}
+
 	// OOB response. Always includes a notes-display OOB swap (keeps the
 	// detail panel's rendered preview in sync with the textarea source), plus
 	// either an in-place row replace (the task still belongs to this view) or
@@ -238,11 +294,17 @@ type taskUpdateResponse struct {
 // TaskComplete handles POST /tasks/{id}/complete. Returns an empty 200 so
 // the calling list row is swapped out of the DOM. The detail panel (if
 // open against this task) is closed by the row form's onclick handler.
+//
+// When the task is recurring and a new instance was generated, sets the
+// HX-Trigger response header so the client can refresh the active task
+// list (the new instance may belong to the current view, e.g. a daily
+// recurrence on /today).
 func (h *Handlers) TaskComplete(w http.ResponseWriter, r *http.Request) {
 	user, _ := auth.UserFromContext(r.Context())
 	id := chi.URLParam(r, "id")
 
-	if _, err := h.Tasks.Complete(r.Context(), user.ID, id); err != nil {
+	_, generated, err := h.Tasks.Complete(r.Context(), user.ID, id)
+	if err != nil {
 		if errors.Is(err, services.ErrTaskNotFound) {
 			http.NotFound(w, r)
 			return
@@ -250,6 +312,9 @@ func (h *Handlers) TaskComplete(w http.ResponseWriter, r *http.Request) {
 		slog.Error("complete task", "err", err)
 		http.Error(w, "internal error", http.StatusInternalServerError)
 		return
+	}
+	if generated != nil {
+		w.Header().Set("HX-Trigger", "tasks-list-changed")
 	}
 	w.WriteHeader(http.StatusOK)
 }
