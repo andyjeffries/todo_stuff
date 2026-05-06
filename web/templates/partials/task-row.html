@@ -42,14 +42,14 @@
 
 
 {{define "task-row"}}
-<li id="task-{{.ID}}" class="group flex items-start gap-3 px-3 py-2 -mx-3 rounded-lg hover:bg-stone-100">
+<li id="task-{{.ID}}" class="group flex items-start gap-3 px-3 py-2 rounded-lg hover:bg-stone-100">
   {{template "task-row-body" .}}
 </li>
 {{end}}
 
 
 {{define "task-row-oob"}}
-<li id="task-{{.ID}}" hx-swap-oob="outerHTML" class="group flex items-start gap-3 px-3 py-2 -mx-3 rounded-lg hover:bg-stone-100">
+<li id="task-{{.ID}}" hx-swap-oob="outerHTML" class="group flex items-start gap-3 px-3 py-2 rounded-lg hover:bg-stone-100">
   {{template "task-row-body" .}}
 </li>
 {{end}}
