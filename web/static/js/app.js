@@ -380,7 +380,38 @@
   if (!document.querySelector('[data-app-shell]')) return;
   const supported = ('Notification' in window);
 
-  // -------- Sidebar enable-reminders button --------
+  // -------- Sidebar enable-reminders button + blocked-instructions modal --
+  const blockedModal = document.getElementById('notif-blocked');
+  const blockedBackdrop = document.getElementById('notif-blocked-backdrop');
+  const BLOCKED_VISIBLE = ['opacity-100', 'pointer-events-auto', 'scale-100'];
+  const BLOCKED_HIDDEN  = ['opacity-0', 'pointer-events-none', 'scale-95'];
+
+  function openBlockedModal() {
+    if (!blockedModal || !blockedBackdrop) return;
+    blockedModal.classList.remove(...BLOCKED_HIDDEN);
+    blockedModal.classList.add(...BLOCKED_VISIBLE);
+    blockedModal.setAttribute('aria-hidden', 'false');
+    blockedBackdrop.classList.remove('opacity-0', 'pointer-events-none');
+    blockedBackdrop.classList.add('opacity-100', 'pointer-events-auto');
+  }
+  function closeBlockedModal() {
+    if (!blockedModal || !blockedBackdrop) return;
+    blockedModal.classList.remove(...BLOCKED_VISIBLE);
+    blockedModal.classList.add(...BLOCKED_HIDDEN);
+    blockedModal.setAttribute('aria-hidden', 'true');
+    blockedBackdrop.classList.remove('opacity-100', 'pointer-events-auto');
+    blockedBackdrop.classList.add('opacity-0', 'pointer-events-none');
+  }
+  if (blockedBackdrop) blockedBackdrop.addEventListener('click', closeBlockedModal);
+  document.addEventListener('click', function (e) {
+    if (e.target.closest('[data-notif-blocked-close]')) closeBlockedModal();
+  });
+  document.addEventListener('keydown', function (e) {
+    if (e.key === 'Escape' && blockedModal && blockedModal.getAttribute('aria-hidden') === 'false') {
+      closeBlockedModal();
+    }
+  });
+
   function syncNotifButton() {
     const btn = document.querySelector('[data-notif-toggle]');
     if (!btn) return;
@@ -393,7 +424,6 @@
     }
     const state = Notification.permission;
     btn.dataset.notifState = state;
-    btn.disabled = (state !== 'default');
     if (state === 'granted') {
       // Once granted, the button is just a status indicator; hide it to
       // keep the sidebar tidy.
@@ -405,7 +435,7 @@
       if (label) label.textContent = 'Reminders blocked';
       if (iconOn) iconOn.classList.add('hidden');
       if (iconOff) iconOff.classList.remove('hidden');
-      btn.title = 'Notifications were denied for this site. Re-enable them in your browser settings (Safari → Settings → Websites → Notifications).';
+      btn.title = 'Click to see how to re-enable notifications for this site.';
     } else { // default
       if (label) label.textContent = 'Enable reminders';
       if (iconOn) iconOn.classList.remove('hidden');
@@ -418,11 +448,20 @@
     const btn = e.target.closest('[data-notif-toggle]');
     if (!btn) return;
     e.preventDefault();
-    if (!supported || Notification.permission !== 'default') return;
+    if (!supported) return;
+    const state = Notification.permission;
+    if (state === 'denied') {
+      openBlockedModal();
+      return;
+    }
+    if (state !== 'default') return;
     try {
       const r = Notification.requestPermission();
       if (r && typeof r.then === 'function') {
-        r.then(syncNotifButton).catch(function () { syncNotifButton(); });
+        r.then(function (next) {
+          syncNotifButton();
+          if (next === 'denied') openBlockedModal();
+        }).catch(function () { syncNotifButton(); });
       } else {
         // Older callback-style API — re-sync on next tick.
         setTimeout(syncNotifButton, 0);
