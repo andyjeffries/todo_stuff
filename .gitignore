@@ -1,0 +1,26 @@
+# Binaries
+/bin/
+/todostuff
+
+# Local data
+/data/
+*.db
+*.db-shm
+*.db-wal
+
+# Node / Tailwind
+/node_modules/
+/web/static/css/app.css
+
+# Env
+.env
+.env.local
+
+# Editor
+.vscode/
+.idea/
+*.swp
+.DS_Store
+
+# Cookies left over from verification scripts
+cookies*.txt

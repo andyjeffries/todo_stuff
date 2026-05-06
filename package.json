@@ -1,0 +1,14 @@
+{
+  "name": "todostuff",
+  "private": true,
+  "version": "0.0.1",
+  "description": "Tailwind build pipeline for TodoStuff",
+  "scripts": {
+    "css": "tailwindcss -i web/static/css/input.css -o web/static/css/app.css --minify",
+    "css:watch": "tailwindcss -i web/static/css/input.css -o web/static/css/app.css --watch"
+  },
+  "devDependencies": {
+    "@tailwindcss/cli": "^4.1.0",
+    "tailwindcss": "^4.1.0"
+  }
+}
