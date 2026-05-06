@@ -52,16 +52,16 @@ Completed tasks grouped by completion date. Click the checkmark again to restore
 
 ## Roadmap
 
-Tracked in detail in [`00-master-plan.md`](00-master-plan.md). Next up:
+Next up:
 
-- **Pushover integration** (M13) — push reminders to mobile so they fire even when the browser tab is closed.
-- **Responsive layout** (M14) — tablet two-pane and mobile single-pane with full-screen detail.
-- **Drag-and-drop reordering + keyboard shortcuts** (M15) — `n` for new task, `Enter` to save, `Esc` to close, drag to reorder.
-- **User management for admins** (M16) — list / create / edit / delete users from a `/admin/users` page.
-- **Docker + docker-compose** (M17) — multi-stage build, volume-mounted SQLite, `.env.example`.
-- **Final polish** (M18) — error pages, loading states, empty states, favicon, README.
+- **Pushover integration** — push reminders to mobile so they fire even when the browser tab is closed.
+- **Responsive layout** — tablet two-pane and mobile single-pane with full-screen detail.
+- **Drag-and-drop reordering + keyboard shortcuts** — `n` for new task, `Enter` to save, `Esc` to close, drag to reorder.
+- **User management for admins** — list / create / edit / delete users from an `/admin/users` page.
+- **Docker + docker-compose** — multi-stage build, volume-mounted SQLite, `.env.example`.
+- **Final polish** — error pages, loading states, empty states, favicon.
 
-Future / out of MVP: subtasks, project areas, tags, search, dark mode, iCal/CalDAV sync, PWA, sharing, attachments, email reminders, webhooks, and a fix for browser notifications on Safari/Chrome localhost (currently flaky — see master plan).
+Further out: subtasks, project areas, tags, search, dark mode, iCal/CalDAV sync, PWA, sharing, attachments, email reminders, webhooks, and a fix for browser notifications on Safari/Chrome localhost (currently flaky).
 
 ## Quick start
 
@@ -122,8 +122,6 @@ web/
   static/              Compiled CSS + vendored HTMX + app.js.
   templates/           layouts/, pages/, partials/.
 docs/screenshots/      README screenshots.
-00-master-plan.md      Source of truth for milestones + verification checks.
-tasks/todo.md          Per-milestone progress + design notes.
 LICENSE.md             GNU GPL v3.
 ```
 
