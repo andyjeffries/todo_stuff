@@ -1,0 +1,56 @@
+{{/*
+  project-list      — sidebar projects, used as the regular partial.
+  project-list-oob  — same content with hx-swap-oob, used when emitted as part
+                      of a larger response (e.g. project rename → header +
+                      OOB sidebar refresh).
+
+  Data shape: { Projects []Project, ActiveProjectID string }
+*/}}
+
+{{define "project-list-body"}}
+{{if .Projects}}
+  {{range .Projects}}
+  <div class="group/proj relative flex items-center">
+    <a href="/projects/{{.ID}}"
+       class="flex flex-1 items-center gap-2.5 px-3 py-1.5 rounded-md text-sm min-w-0 {{if eq $.ActiveProjectID .ID}}bg-amber-100 text-amber-900 font-medium{{else}}text-stone-700 hover:bg-stone-200{{end}}">
+      <span class="inline-flex h-4 w-4 shrink-0 items-center justify-center">
+        {{template "project-icon" (dict "Name" .Icon.String "Class" "h-4 w-4")}}
+      </span>
+      <span class="truncate">{{.Name}}</span>
+    </a>
+    <div class="absolute right-1 top-1/2 -translate-y-1/2 flex items-center opacity-0 group-hover/proj:opacity-100 transition-opacity">
+      <button type="button"
+              hx-post="/projects/{{.ID}}/move?dir=up"
+              hx-target="#project-list" hx-swap="outerHTML"
+              aria-label="Move project up"
+              class="p-0.5 rounded text-stone-500 hover:bg-stone-300 hover:text-stone-800">
+        {{template "icon-chevron-up" "h-3 w-3"}}
+      </button>
+      <button type="button"
+              hx-post="/projects/{{.ID}}/move?dir=down"
+              hx-target="#project-list" hx-swap="outerHTML"
+              aria-label="Move project down"
+              class="p-0.5 rounded text-stone-500 hover:bg-stone-300 hover:text-stone-800">
+        {{template "icon-chevron-down" "h-3 w-3"}}
+      </button>
+    </div>
+  </div>
+  {{end}}
+{{else}}
+  <p class="px-3 py-1.5 text-xs text-stone-400 italic">No projects yet.</p>
+{{end}}
+{{end}}
+
+
+{{define "project-list"}}
+<div id="project-list" class="space-y-0.5">
+  {{template "project-list-body" .}}
+</div>
+{{end}}
+
+
+{{define "project-list-oob"}}
+<div id="project-list" hx-swap-oob="outerHTML" class="space-y-0.5">
+  {{template "project-list-body" .}}
+</div>
+{{end}}

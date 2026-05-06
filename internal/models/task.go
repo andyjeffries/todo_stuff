@@ -7,6 +7,10 @@ import (
 
 // Task mirrors the tasks row. Optional columns use sql.NullX so the
 // "set/unset" distinction survives round-tripping through the DB.
+//
+// ProjectName / ProjectIcon are computed read-only fields populated by a
+// LEFT JOIN to the projects table when a task is fetched for display.
+// They are not persisted on the tasks row directly.
 type Task struct {
 	ID               string
 	UserID           string
@@ -23,6 +27,9 @@ type Task struct {
 	RecurrenceRuleID sql.NullString
 	CreatedAt        time.Time
 	UpdatedAt        time.Time
+
+	ProjectName sql.NullString
+	ProjectIcon sql.NullString
 }
 
 func (t *Task) IsCompleted() bool { return t.CompletedAt.Valid }

@@ -46,6 +46,7 @@ func main() {
 
 	authSvc := auth.NewService(db, cookieSecure)
 	tasksSvc := services.NewTasks(db)
+	projectsSvc := services.NewProjects(db)
 
 	renderer, err := render.New(web.TemplateFS)
 	if err != nil {
@@ -53,7 +54,7 @@ func main() {
 		os.Exit(1)
 	}
 
-	h := handlers.New(authSvc, tasksSvc, renderer)
+	h := handlers.New(authSvc, tasksSvc, projectsSvc, renderer)
 
 	r := chi.NewRouter()
 	r.Use(middleware.RequestID)
@@ -90,6 +91,12 @@ func main() {
 		pr.Delete("/tasks/{id}", h.TaskDelete)
 		pr.Post("/tasks/{id}/complete", h.TaskComplete)
 		pr.Post("/tasks/{id}/uncomplete", h.TaskUncomplete)
+
+		pr.Post("/projects", h.ProjectCreate)
+		pr.Get("/projects/{id}", h.ProjectView)
+		pr.Put("/projects/{id}", h.ProjectUpdate)
+		pr.Delete("/projects/{id}", h.ProjectDelete)
+		pr.Post("/projects/{id}/move", h.ProjectMove)
 	})
 
 	srv := &http.Server{

@@ -108,11 +108,34 @@ func (t *Tasks) Create(ctx context.Context, userID string, p CreateTaskParams) (
 // ------------------------------------------------------------------- Get ---
 
 func (t *Tasks) Get(ctx context.Context, userID, id string) (*models.Task, error) {
-	row := t.db.QueryRowContext(ctx, taskSelect+` WHERE id = ? AND user_id = ?`, id, userID)
+	row := t.db.QueryRowContext(ctx, taskSelect+` WHERE t.id = ? AND t.user_id = ?`, id, userID)
 	return scanTask(row)
 }
 
 // ------------------------------------------------------------------- List ---
+
+// ListByProject returns the project's incomplete tasks, ordered by position.
+// Completed tasks are still surfaced via the Logbook view.
+func (t *Tasks) ListByProject(ctx context.Context, userID, projectID string) ([]models.Task, error) {
+	rows, err := t.db.QueryContext(ctx,
+		taskSelect+` WHERE t.user_id = ? AND t.project_id = ? AND t.completed_at IS NULL ORDER BY t.position`,
+		userID, projectID,
+	)
+	if err != nil {
+		return nil, fmt.Errorf("list project tasks: %w", err)
+	}
+	defer rows.Close()
+
+	var out []models.Task
+	for rows.Next() {
+		task, err := scanTask(rows)
+		if err != nil {
+			return nil, err
+		}
+		out = append(out, *task)
+	}
+	return out, rows.Err()
+}
 
 func (t *Tasks) ListByView(ctx context.Context, userID string, view View) ([]models.Task, error) {
 	where, order, args := viewQuery(userID, view, t.now())
@@ -134,6 +157,8 @@ func (t *Tasks) ListByView(ctx context.Context, userID string, view View) ([]mod
 }
 
 // viewQuery returns the WHERE clause, ORDER BY clause, and args for a view.
+// Column references must qualify with `t.` because taskSelect joins the
+// projects table.
 //
 // Inbox semantics deliberately diverge from the master plan: an Inbox task is
 // one with neither a project nor a due date — i.e. truly unprocessed work.
@@ -142,24 +167,24 @@ func viewQuery(userID string, view View, now time.Time) (where, order string, ar
 	today := now.Format("2006-01-02")
 	switch view {
 	case ViewToday:
-		return `user_id = ? AND completed_at IS NULL AND (due_date IS NULL OR due_date <= ?)`,
-			`due_time IS NULL, due_time, position`,
+		return `t.user_id = ? AND t.completed_at IS NULL AND (t.due_date IS NULL OR t.due_date <= ?)`,
+			`t.due_time IS NULL, t.due_time, t.position`,
 			[]any{userID, today}
 	case ViewInbox:
-		return `user_id = ? AND completed_at IS NULL AND project_id IS NULL AND due_date IS NULL`,
-			`position`,
+		return `t.user_id = ? AND t.completed_at IS NULL AND t.project_id IS NULL AND t.due_date IS NULL`,
+			`t.position`,
 			[]any{userID}
 	case ViewUpcoming:
-		return `user_id = ? AND completed_at IS NULL AND due_date > ?`,
-			`due_date, due_time IS NULL, due_time, position`,
+		return `t.user_id = ? AND t.completed_at IS NULL AND t.due_date > ?`,
+			`t.due_date, t.due_time IS NULL, t.due_time, t.position`,
 			[]any{userID, today}
 	case ViewLogbook:
-		return `user_id = ? AND completed_at IS NOT NULL`,
-			`completed_at DESC`,
+		return `t.user_id = ? AND t.completed_at IS NOT NULL`,
+			`t.completed_at DESC`,
 			[]any{userID}
 	default: // ViewAnytime
-		return `user_id = ? AND completed_at IS NULL`,
-			`project_id IS NULL, position`,
+		return `t.user_id = ? AND t.completed_at IS NULL`,
+			`t.project_id IS NULL, t.position`,
 			[]any{userID}
 	}
 }
@@ -296,11 +321,16 @@ func (t *Tasks) Delete(ctx context.Context, userID, id string) error {
 
 // --------------------------------------------------------------- Helpers ---
 
+// taskSelect joins projects so list rows can show their project's name + icon
+// without a second round-trip. The two trailing columns are nullable —
+// LEFT JOIN means tasks without a project come back with NULL/NULL there.
 const taskSelect = `
-SELECT id, user_id, project_id, title, notes, notes_html,
-       is_important, due_date, due_time, reminder_at, completed_at,
-       position, recurrence_rule_id, created_at, updated_at
-  FROM tasks`
+SELECT t.id, t.user_id, t.project_id, t.title, t.notes, t.notes_html,
+       t.is_important, t.due_date, t.due_time, t.reminder_at, t.completed_at,
+       t.position, t.recurrence_rule_id, t.created_at, t.updated_at,
+       p.name, p.icon
+  FROM tasks t
+  LEFT JOIN projects p ON p.id = t.project_id`
 
 type scanner interface {
 	Scan(dest ...any) error
@@ -312,6 +342,7 @@ func scanTask(s scanner) (*models.Task, error) {
 		&t.ID, &t.UserID, &t.ProjectID, &t.Title, &t.Notes, &t.NotesHTML,
 		&t.IsImportant, &t.DueDate, &t.DueTime, &t.ReminderAt, &t.CompletedAt,
 		&t.Position, &t.RecurrenceRuleID, &t.CreatedAt, &t.UpdatedAt,
+		&t.ProjectName, &t.ProjectIcon,
 	)
 	if errors.Is(err, sql.ErrNoRows) {
 		return nil, ErrTaskNotFound

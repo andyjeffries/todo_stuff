@@ -1,5 +1,11 @@
+{{/*
+  task-list — emits the <ul> wrapper plus a row per task. Suppresses the
+  per-row project tag when rendered on a project page (controlled by the
+  page's .HideProject flag).
+*/}}
 {{define "task-list"}}
 <ul id="task-list" class="-mx-3 divide-y divide-stone-100">
-  {{range .Tasks}}{{template "task-row" .}}{{end}}
+  {{$hide := .HideProject}}
+  {{range .Tasks}}{{template "task-row" (dict "Task" . "HideProject" $hide)}}{{end}}
 </ul>
 {{end}}

@@ -9,9 +9,34 @@ import (
 	"time"
 
 	"github.com/andyjessop/todostuff/internal/auth"
+	"github.com/andyjessop/todostuff/internal/models"
 	"github.com/andyjessop/todostuff/internal/services"
 	"github.com/go-chi/chi/v5"
 )
+
+// taskDetailData wraps a task plus the user's projects for the detail-panel
+// project selector.
+type taskDetailData struct {
+	Task     models.Task
+	Projects []models.Project
+}
+
+// taskRowData is the wrapper shape that the task-row family of templates
+// expects. HideProject suppresses the per-row project tag — used on the
+// project page where every row shares the same project.
+type taskRowData struct {
+	Task        models.Task
+	HideProject bool
+}
+
+// hideProjectForRequest infers whether a row rendered as a side-effect of
+// this request should suppress its project tag. We use the HX-Current-Url
+// header (set by HTMX on every request) to detect when the user is on a
+// /projects/{id} page.
+func hideProjectForRequest(r *http.Request) bool {
+	url := r.Header.Get("Hx-Current-Url")
+	return strings.Contains(url, "/projects/")
+}
 
 // TaskCreate handles POST /tasks. Returns the rendered task row partial so
 // HTMX can prepend it into the list. A non-HTMX form post still works — the
@@ -30,7 +55,7 @@ func (h *Handlers) TaskCreate(w http.ResponseWriter, r *http.Request) {
 	p := services.CreateTaskParams{
 		Title:       r.PostFormValue("title"),
 		Notes:       r.PostFormValue("notes"),
-		ProjectID:   r.PostFormValue("project_id"),
+		ProjectID:   strings.TrimSpace(r.PostFormValue("project_id")),
 		IsImportant: parseBool(r.PostFormValue("is_important")),
 		DueTime:     strings.TrimSpace(r.PostFormValue("due_time")),
 	}
@@ -47,7 +72,8 @@ func (h *Handlers) TaskCreate(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if err := h.Render.Render(w, http.StatusOK, "today", "task-row", task); err != nil {
+	row := taskRowData{Task: *task, HideProject: hideProjectForRequest(r)}
+	if err := h.Render.Render(w, http.StatusOK, "today", "task-row", row); err != nil {
 		slog.Error("render task-row", "err", err)
 	}
 }
@@ -68,7 +94,12 @@ func (h *Handlers) TaskDetail(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "internal error", http.StatusInternalServerError)
 		return
 	}
-	if err := h.Render.Render(w, http.StatusOK, "today", "task-detail", task); err != nil {
+	projects, err := h.Projects.List(r.Context(), user.ID)
+	if err != nil {
+		slog.Error("list projects for task detail", "err", err)
+	}
+	data := taskDetailData{Task: *task, Projects: projects}
+	if err := h.Render.Render(w, http.StatusOK, "today", "task-detail", data); err != nil {
 		slog.Error("render task-detail", "err", err)
 	}
 }
@@ -93,6 +124,10 @@ func (h *Handlers) TaskUpdate(w http.ResponseWriter, r *http.Request) {
 		notes := r.PostFormValue("notes")
 		patch.Notes = &sql.NullString{String: notes, Valid: notes != ""}
 	}
+	if r.PostForm.Has("project_id") {
+		pid := strings.TrimSpace(r.PostFormValue("project_id"))
+		patch.ProjectID = &sql.NullString{String: pid, Valid: pid != ""}
+	}
 	// is_important uses a hidden "*_present" marker so an unchecked checkbox
 	// (which the browser omits entirely) still updates the field to false.
 	if r.PostForm.Has("is_important_present") {
@@ -116,7 +151,8 @@ func (h *Handlers) TaskUpdate(w http.ResponseWriter, r *http.Request) {
 
 	// OOB swap: replaces the matching list row in place while leaving the
 	// detail slide-over (the source of the PUT) untouched.
-	if err := h.Render.Render(w, http.StatusOK, "today", "task-row-oob", task); err != nil {
+	row := taskRowData{Task: *task, HideProject: hideProjectForRequest(r)}
+	if err := h.Render.Render(w, http.StatusOK, "today", "task-row-oob", row); err != nil {
 		slog.Error("render task-row-oob", "err", err)
 	}
 }

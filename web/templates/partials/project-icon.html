@@ -1,0 +1,72 @@
+{{/*
+  Project icons.
+
+  - "project-icon"        — render the icon for a stored icon ID (e.g. "briefcase").
+                            Data: { Name string, Class string }. Falls back to
+                            icon-folder for unknown / empty names.
+  - "project-icon-picker" — chooser widget. Data: the currently-selected icon ID
+                            (a plain string; pass "" for none). Renders a hidden
+                            <input name="icon"> + a grid of clickable icon
+                            buttons. JS in app.js wires the click handler.
+
+  Keeping the dispatcher in templates (rather than a Go func) keeps the SVGs in
+  one place — partials/icons.html — and avoids passing the renderer around.
+*/}}
+
+{{define "project-icon"}}
+{{- $cls := .Class -}}{{- $n := .Name -}}
+{{- if eq $n "briefcase"      }}{{template "icon-briefcase" $cls}}
+{{- else if eq $n "home"      }}{{template "icon-home" $cls}}
+{{- else if eq $n "book"      }}{{template "icon-book" $cls}}
+{{- else if eq $n "academic-cap" }}{{template "icon-academic-cap" $cls}}
+{{- else if eq $n "heart"     }}{{template "icon-heart" $cls}}
+{{- else if eq $n "shopping-cart" }}{{template "icon-shopping-cart" $cls}}
+{{- else if eq $n "gift"      }}{{template "icon-gift" $cls}}
+{{- else if eq $n "bolt"      }}{{template "icon-bolt" $cls}}
+{{- else if eq $n "code"      }}{{template "icon-code" $cls}}
+{{- else if eq $n "paint-brush" }}{{template "icon-paint-brush" $cls}}
+{{- else if eq $n "music"     }}{{template "icon-music" $cls}}
+{{- else if eq $n "camera"    }}{{template "icon-camera" $cls}}
+{{- else if eq $n "map-pin"   }}{{template "icon-map-pin" $cls}}
+{{- else if eq $n "beaker"    }}{{template "icon-beaker" $cls}}
+{{- else if eq $n "trophy"    }}{{template "icon-trophy" $cls}}
+{{- else if eq $n "archive-box" }}{{template "icon-archive-box" $cls}}
+{{- else if eq $n "star"      }}{{template "icon-star" $cls}}
+{{- else                      }}{{template "icon-folder" $cls}}
+{{- end -}}
+{{end}}
+
+
+{{define "project-icon-picker"}}
+{{$selected := .}}
+<input type="hidden" name="icon" value="{{$selected}}" data-icon-input>
+<div class="grid grid-cols-9 gap-1" data-icon-picker>
+  {{template "project-icon-button" (dict "ID" "folder"        "Selected" $selected)}}
+  {{template "project-icon-button" (dict "ID" "briefcase"     "Selected" $selected)}}
+  {{template "project-icon-button" (dict "ID" "home"          "Selected" $selected)}}
+  {{template "project-icon-button" (dict "ID" "book"          "Selected" $selected)}}
+  {{template "project-icon-button" (dict "ID" "academic-cap"  "Selected" $selected)}}
+  {{template "project-icon-button" (dict "ID" "heart"         "Selected" $selected)}}
+  {{template "project-icon-button" (dict "ID" "shopping-cart" "Selected" $selected)}}
+  {{template "project-icon-button" (dict "ID" "gift"          "Selected" $selected)}}
+  {{template "project-icon-button" (dict "ID" "bolt"          "Selected" $selected)}}
+  {{template "project-icon-button" (dict "ID" "code"          "Selected" $selected)}}
+  {{template "project-icon-button" (dict "ID" "paint-brush"   "Selected" $selected)}}
+  {{template "project-icon-button" (dict "ID" "music"         "Selected" $selected)}}
+  {{template "project-icon-button" (dict "ID" "camera"        "Selected" $selected)}}
+  {{template "project-icon-button" (dict "ID" "map-pin"       "Selected" $selected)}}
+  {{template "project-icon-button" (dict "ID" "beaker"        "Selected" $selected)}}
+  {{template "project-icon-button" (dict "ID" "trophy"        "Selected" $selected)}}
+  {{template "project-icon-button" (dict "ID" "archive-box"   "Selected" $selected)}}
+  {{template "project-icon-button" (dict "ID" "star"          "Selected" $selected)}}
+</div>
+{{end}}
+
+
+{{define "project-icon-button"}}
+<button type="button" data-icon-id="{{.ID}}"
+        aria-label="{{.ID}}"
+        class="inline-flex h-7 w-7 items-center justify-center rounded-md border {{if eq .ID .Selected}}border-amber-400 bg-amber-100 text-amber-700{{else}}border-transparent text-stone-500 hover:bg-stone-100 hover:text-stone-800{{end}}">
+  {{template "project-icon" (dict "Name" .ID "Class" "h-4 w-4")}}
+</button>
+{{end}}

@@ -87,4 +87,20 @@ var funcMap = template.FuncMap{
 		}
 		return s
 	},
+	// dict builds a map[string]any from alternating key/value pairs, so
+	// templates can pass multi-field data when invoking sub-templates.
+	"dict": func(values ...any) (map[string]any, error) {
+		if len(values)%2 != 0 {
+			return nil, fmt.Errorf("dict: odd number of arguments")
+		}
+		out := make(map[string]any, len(values)/2)
+		for i := 0; i < len(values); i += 2 {
+			key, ok := values[i].(string)
+			if !ok {
+				return nil, fmt.Errorf("dict: key %d is not a string", i)
+			}
+			out[key] = values[i+1]
+		}
+		return out, nil
+	},
 }

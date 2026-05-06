@@ -8,11 +8,12 @@ import (
 )
 
 type Handlers struct {
-	Auth   *auth.Service
-	Tasks  *services.Tasks
-	Render *render.Renderer
+	Auth     *auth.Service
+	Tasks    *services.Tasks
+	Projects *services.Projects
+	Render   *render.Renderer
 }
 
-func New(a *auth.Service, t *services.Tasks, r *render.Renderer) *Handlers {
-	return &Handlers{Auth: a, Tasks: t, Render: r}
+func New(a *auth.Service, t *services.Tasks, p *services.Projects, r *render.Renderer) *Handlers {
+	return &Handlers{Auth: a, Tasks: t, Projects: p, Render: r}
 }

@@ -12,12 +12,18 @@ import (
 
 // appViewData drives any page rendered against the "app" layout.
 type appViewData struct {
-	Title      string
-	ActiveView string
-	Heading    string
-	Subheading string
-	User       *models.User
-	Tasks      []models.Task
+	Title           string
+	ActiveView      string
+	ActiveProjectID string
+	Heading         string
+	Subheading      string
+	User            *models.User
+	Tasks           []models.Task
+	Projects        []models.Project
+	// HideProject suppresses the per-row project tag on task lists. Set on
+	// the project page (where every row shares the same project, making
+	// the tag redundant). Default false everywhere else.
+	HideProject bool
 }
 
 func (h *Handlers) renderAppView(w http.ResponseWriter, r *http.Request, page string, data appViewData) {
@@ -26,10 +32,22 @@ func (h *Handlers) renderAppView(w http.ResponseWriter, r *http.Request, page st
 			data.User = u
 		}
 	}
+	if data.Projects == nil && data.User != nil {
+		data.Projects = h.loadSidebarProjects(r, data.User.ID)
+	}
 	if err := h.Render.Render(w, http.StatusOK, page, "app", data); err != nil {
 		slog.Error("render app view", "page", page, "err", err)
 		http.Error(w, "internal error", http.StatusInternalServerError)
 	}
+}
+
+func (h *Handlers) loadSidebarProjects(r *http.Request, userID string) []models.Project {
+	projects, err := h.Projects.List(r.Context(), userID)
+	if err != nil {
+		slog.Error("load sidebar projects", "err", err)
+		return nil
+	}
+	return projects
 }
 
 func (h *Handlers) listForView(r *http.Request, view services.View) []models.Task {
@@ -110,6 +128,7 @@ func (h *Handlers) Logbook(w http.ResponseWriter, r *http.Request) {
 	}
 	if u, ok := auth.UserFromContext(r.Context()); ok {
 		data.User = u
+		data.Projects = h.loadSidebarProjects(r, u.ID)
 	}
 	if err := h.Render.Render(w, http.StatusOK, "logbook", "app", data); err != nil {
 		slog.Error("render app view", "page", "logbook", "err", err)
