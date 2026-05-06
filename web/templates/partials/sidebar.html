@@ -69,7 +69,18 @@
     </form>
   </nav>
 
-  <div class="border-t border-stone-200 px-3 py-3">
+  <div class="border-t border-stone-200 px-3 py-3 space-y-2">
+    {{/* Notification permission toggle. JS shows/hides + relabels this based
+         on Notification.permission ("default" / "denied"; hidden when
+         "granted"). The click is the user gesture browsers now require
+         before the permission prompt will appear. */}}
+    <button type="button" data-notif-toggle
+            class="hidden w-full inline-flex items-center gap-2 rounded-md border border-stone-200 bg-white px-2.5 py-1.5 text-xs text-stone-700 hover:bg-stone-50 disabled:cursor-help disabled:hover:bg-white">
+      <span data-notif-icon="on">{{template "icon-bell" "h-4 w-4 shrink-0 text-amber-500"}}</span>
+      <span data-notif-icon="off" class="hidden">{{template "icon-bell-slash" "h-4 w-4 shrink-0 text-stone-400"}}</span>
+      <span data-notif-label class="truncate">Enable reminders</span>
+    </button>
+
     <form method="POST" action="/logout" class="flex items-center justify-between gap-2">
       <span class="truncate text-sm text-stone-700" title="{{.User.Email}}">{{.User.Name}}</span>
       <button type="submit" class="text-xs text-stone-500 hover:text-stone-900">Sign out</button>

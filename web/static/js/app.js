@@ -38,7 +38,7 @@
     if (e.key !== 'Escape') return;
     // Don't dismiss the panel if a child overlay is consuming the Escape —
     // e.g. the project-select dropdown should close first.
-    if (document.querySelector('[data-project-select-list]:not(.hidden)')) return;
+    if (document.querySelector('[data-listbox-list]:not(.hidden)')) return;
     if (panel.getAttribute('aria-hidden') === 'false') close();
   });
 
@@ -222,6 +222,30 @@
   });
 })();
 
+// Reminder section visibility. The Reminder dropdown is only meaningful
+// when the task has both a due date AND a due time (the offset anchors
+// against that datetime). Toggle visibility as the date/time inputs change
+// so users don't see a dead control. The server-side Update clears the
+// reminder columns automatically when due_date or due_time is cleared, so
+// we only need to manage UI here — no need to reset the listbox value.
+(function () {
+  function syncReminderVisibility(form) {
+    const fields = form.querySelector('[data-reminder-fields]');
+    if (!fields) return;
+    const dateEl = form.querySelector('input[name="due_date"]');
+    const timeEl = form.querySelector('input[name="due_time"]');
+    const canRemind = !!(dateEl && dateEl.value && timeEl && timeEl.value);
+    fields.classList.toggle('hidden', !canRemind);
+  }
+
+  document.addEventListener('change', function (e) {
+    const input = e.target;
+    if (!input.matches('input[name="due_date"], input[name="due_time"]')) return;
+    const form = input.closest('form');
+    if (form) syncReminderVisibility(form);
+  });
+})();
+
 // Recurrence frequency change → toggle visibility of the regeneration-type
 // radio group. When frequency is "" (Never) the type radios are meaningless
 // and just add visual noise; the form still submits all three fields and
@@ -270,28 +294,38 @@
   });
 })();
 
-// Custom project select in the task detail panel. Replaces a native <select>
-// so each option can render its project icon (SVGs, which a native <select>
-// can't render). The hidden input carries the value to the form; selecting
-// an option dispatches `change` on it so the form's HTMX trigger fires.
+// Generic custom listbox. Markup contract (any element with these attrs):
+//
+//   [data-listbox]            — root wrapper
+//     [data-listbox-input]    — hidden <input> carrying the form value
+//     [data-listbox-toggle]   — button that opens/closes the listbox
+//       [data-listbox-display] — span inside the toggle (shows current pick)
+//     [data-listbox-list]     — the listbox <ul> (hidden by default)
+//       [data-listbox-option] — each clickable <button> with data-value
+//
+// Selecting an option mirrors its innerHTML into the display span and writes
+// the value into the hidden input. If the value changed we dispatch `change`
+// on the hidden input so a form's HTMX trigger fires.
+//
+// Used by task-project-select and task-reminder-select.
 (function () {
   function closeAll(except) {
-    document.querySelectorAll('[data-project-select]').forEach(function (el) {
+    document.querySelectorAll('[data-listbox]').forEach(function (el) {
       if (el === except) return;
-      const list = el.querySelector('[data-project-select-list]');
-      const toggle = el.querySelector('[data-project-select-toggle]');
+      const list = el.querySelector('[data-listbox-list]');
+      const toggle = el.querySelector('[data-listbox-toggle]');
       if (list) list.classList.add('hidden');
       if (toggle) toggle.setAttribute('aria-expanded', 'false');
     });
   }
 
   document.addEventListener('click', function (e) {
-    const toggle = e.target.closest('[data-project-select-toggle]');
+    const toggle = e.target.closest('[data-listbox-toggle]');
     if (toggle) {
       e.preventDefault();
-      const wrap = toggle.closest('[data-project-select]');
+      const wrap = toggle.closest('[data-listbox]');
       if (!wrap) return;
-      const list = wrap.querySelector('[data-project-select-list]');
+      const list = wrap.querySelector('[data-listbox-list]');
       if (!list) return;
       const willOpen = list.classList.contains('hidden');
       closeAll(willOpen ? wrap : null);
@@ -300,19 +334,19 @@
       return;
     }
 
-    const opt = e.target.closest('[data-project-select-option]');
+    const opt = e.target.closest('[data-listbox-option]');
     if (opt) {
       e.preventDefault();
-      const wrap = opt.closest('[data-project-select]');
+      const wrap = opt.closest('[data-listbox]');
       if (!wrap) return;
-      const input = wrap.querySelector('[data-project-select-input]');
-      const display = wrap.querySelector('[data-project-select-display]');
+      const input = wrap.querySelector('[data-listbox-input]');
+      const display = wrap.querySelector('[data-listbox-display]');
       if (!input || !display) return;
       const newValue = opt.dataset.value || '';
       const old = input.value;
       input.value = newValue;
       // Mirror the picked option's content into the toggle button so the
-      // selection's icon + name show up immediately, no round-trip needed.
+      // selection's icon + label show up immediately, no round-trip needed.
       display.innerHTML = opt.innerHTML;
       closeAll(null);
       if (newValue !== old) {
@@ -321,13 +355,131 @@
       return;
     }
 
-    // Click outside any open select → close them.
-    if (!e.target.closest('[data-project-select]')) closeAll(null);
+    // Click outside any open listbox → close them.
+    if (!e.target.closest('[data-listbox]')) closeAll(null);
   });
 
   document.addEventListener('keydown', function (e) {
     if (e.key === 'Escape') closeAll(null);
   });
+})();
+
+// Browser notifications for due reminders.
+//
+//   1. The sidebar exposes an [data-notif-toggle] button that drives the
+//      permission state. Browsers require Notification.requestPermission()
+//      to come from a real user gesture (page-load calls are silently
+//      ignored), so the button click is the gesture.
+//   2. Poll /api/reminders/due every 60s. The endpoint atomically marks
+//      everything it returns as delivered, so we never re-fire the same row.
+//   3. For each row, post a `new Notification`. Clicking the notification
+//      focuses the tab and opens the task detail panel.
+//
+// Pages without the [data-app-shell] marker (login, setup) are skipped.
+(function () {
+  if (!document.querySelector('[data-app-shell]')) return;
+  const supported = ('Notification' in window);
+
+  // -------- Sidebar enable-reminders button --------
+  function syncNotifButton() {
+    const btn = document.querySelector('[data-notif-toggle]');
+    if (!btn) return;
+    const label = btn.querySelector('[data-notif-label]');
+    const iconOn = btn.querySelector('[data-notif-icon="on"]');
+    const iconOff = btn.querySelector('[data-notif-icon="off"]');
+    if (!supported) {
+      btn.classList.add('hidden');
+      return;
+    }
+    const state = Notification.permission;
+    btn.dataset.notifState = state;
+    btn.disabled = (state !== 'default');
+    if (state === 'granted') {
+      // Once granted, the button is just a status indicator; hide it to
+      // keep the sidebar tidy.
+      btn.classList.add('hidden');
+      return;
+    }
+    btn.classList.remove('hidden');
+    if (state === 'denied') {
+      if (label) label.textContent = 'Reminders blocked';
+      if (iconOn) iconOn.classList.add('hidden');
+      if (iconOff) iconOff.classList.remove('hidden');
+      btn.title = 'Notifications were denied for this site. Re-enable them in your browser settings (Safari → Settings → Websites → Notifications).';
+    } else { // default
+      if (label) label.textContent = 'Enable reminders';
+      if (iconOn) iconOn.classList.remove('hidden');
+      if (iconOff) iconOff.classList.add('hidden');
+      btn.title = 'Click to allow browser notifications for due reminders.';
+    }
+  }
+
+  document.addEventListener('click', function (e) {
+    const btn = e.target.closest('[data-notif-toggle]');
+    if (!btn) return;
+    e.preventDefault();
+    if (!supported || Notification.permission !== 'default') return;
+    try {
+      const r = Notification.requestPermission();
+      if (r && typeof r.then === 'function') {
+        r.then(syncNotifButton).catch(function () { syncNotifButton(); });
+      } else {
+        // Older callback-style API — re-sync on next tick.
+        setTimeout(syncNotifButton, 0);
+      }
+    } catch (_) { syncNotifButton(); }
+  });
+
+  syncNotifButton();
+  // Re-sync after HTMX swaps in case the sidebar was replaced.
+  document.body.addEventListener('htmx:afterSwap', syncNotifButton);
+
+  if (!supported) return;
+
+  const POLL_MS = 60 * 1000;
+
+  async function poll() {
+    try {
+      const res = await fetch('/api/reminders/due', {
+        credentials: 'same-origin',
+        headers: { Accept: 'application/json' },
+      });
+      if (!res.ok) return;
+      const reminders = await res.json();
+      if (!Array.isArray(reminders) || reminders.length === 0) return;
+      if (Notification.permission !== 'granted') return;
+      reminders.forEach(function (rem) {
+        try {
+          const n = new Notification(rem.title || 'Reminder', {
+            body: rem.notes || '',
+            tag: 'todostuff-reminder-' + rem.id,
+          });
+          n.onclick = function () {
+            window.focus();
+            // Bring the user to /today and pop the task detail. We don't
+            // know which view contains the task; /today is a safe default
+            // and always exists for an authenticated user.
+            if (rem.id && typeof htmx !== 'undefined') {
+              htmx.ajax('GET', '/tasks/' + rem.id, {
+                target: '#detail-panel-body',
+                swap: 'innerHTML',
+              }).then(function () {
+                if (window.TodoStuff && window.TodoStuff.openDetail) {
+                  window.TodoStuff.openDetail();
+                }
+              });
+            }
+            n.close();
+          };
+        } catch (_) { /* notification construction can throw on iOS PWA, ignore */ }
+      });
+    } catch (_) { /* network error — try again next tick */ }
+  }
+
+  // Fire one immediate poll so reminders queued while the tab was closed
+  // surface as soon as the user returns; then settle into the interval.
+  poll();
+  setInterval(poll, POLL_MS);
 })();
 
 // Project icon picker. Click a [data-icon-id] button → write its ID into the

@@ -243,6 +243,30 @@ func (h *Handlers) TaskUpdate(w http.ResponseWriter, r *http.Request) {
 		raw := strings.TrimSpace(r.PostFormValue("due_time"))
 		patch.DueTime = &sql.NullString{String: raw, Valid: raw != ""}
 	}
+	// Reminder = (due_date + due_time) − offset_minutes. The form posts an
+	// offset selected from a curated dropdown; the server computes the
+	// absolute reminder_at so the polling query stays a simple WHERE clause.
+	// A reminder requires both a due date AND a due time; clearing either
+	// (handled in the service Update) wipes the reminder columns.
+	if r.PostForm.Has("reminder_offset_present") {
+		offsetRaw := strings.TrimSpace(r.PostFormValue("reminder_offset"))
+		// Pick the *final* due date/time as the form sees it (the same form
+		// posts due_date / due_time alongside the offset). Fall back to the
+		// existing patch values when the form doesn't include the markers.
+		dueDateRaw := strings.TrimSpace(r.PostFormValue("due_date"))
+		dueTimeRaw := strings.TrimSpace(r.PostFormValue("due_time"))
+
+		if offsetRaw == "" || dueDateRaw == "" || dueTimeRaw == "" {
+			patch.ReminderAt = &sql.NullTime{}
+			patch.ReminderOffsetMinutes = &sql.NullInt64{}
+		} else if minutes, ok := parseReminderOffset(offsetRaw); ok {
+			if dueAt, err := time.ParseInLocation("2006-01-02 15:04", dueDateRaw+" "+dueTimeRaw, time.Local); err == nil {
+				reminderAt := dueAt.Add(-time.Duration(minutes) * time.Minute).UTC()
+				patch.ReminderAt = &sql.NullTime{Time: reminderAt, Valid: true}
+				patch.ReminderOffsetMinutes = &sql.NullInt64{Int64: int64(minutes), Valid: true}
+			}
+		}
+	}
 
 	task, err := h.Tasks.Update(r.Context(), user.ID, id, patch)
 	if err != nil {
@@ -354,6 +378,25 @@ func (h *Handlers) TaskDelete(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	w.WriteHeader(http.StatusOK)
+}
+
+// allowedReminderOffsets is the closed set of offset values the dropdown
+// surfaces. Server-side validation rejects anything outside this set so a
+// crafted POST can't store an arbitrary value.
+var allowedReminderOffsets = map[int]struct{}{
+	0: {}, 5: {}, 10: {}, 15: {}, 30: {}, 60: {},
+	120: {}, 240: {}, 480: {}, 720: {}, 1440: {},
+}
+
+func parseReminderOffset(s string) (int, bool) {
+	n, err := strconv.Atoi(s)
+	if err != nil {
+		return 0, false
+	}
+	if _, ok := allowedReminderOffsets[n]; !ok {
+		return 0, false
+	}
+	return n, true
 }
 
 func parseBool(s string) bool {

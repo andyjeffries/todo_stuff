@@ -57,6 +57,19 @@
     </div>
   </div>
 
+  {{/* Reminder is only meaningful when the task has both a due date AND
+       a due time — the offset dropdown anchors against that datetime. JS
+       toggles the `hidden` class on this wrapper as the date/time inputs
+       change so users don't see a dead control. */}}
+  {{$canRemind := and $task.DueDate.Valid $task.DueTime.Valid}}
+  <div data-reminder-fields class="space-y-2 {{if not $canRemind}}hidden{{end}}">
+    <label class="text-xs uppercase tracking-wider text-stone-500">Reminder</label>
+    {{/* Marker tells the handler "the form intends to set the reminder";
+         a missing marker means the reminder fields aren't present this submit. */}}
+    <input type="hidden" name="reminder_offset_present" value="1">
+    {{template "task-reminder-select" .}}
+  </div>
+
   {{$rule := .Rule}}
   {{$freq := ""}}{{$interval := 1}}{{$type := "on_create"}}
   {{if $rule}}{{$freq = $rule.Frequency}}{{$interval = $rule.Interval}}{{$type = $rule.RegenerationType}}{{end}}

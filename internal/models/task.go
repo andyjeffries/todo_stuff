@@ -21,8 +21,10 @@ type Task struct {
 	IsImportant      bool
 	DueDate          sql.NullTime   // DATE column; only the y-m-d portion is meaningful
 	DueTime          sql.NullString // TIME column stored as "HH:MM" or "HH:MM:SS"
-	ReminderAt       sql.NullTime
-	CompletedAt      sql.NullTime
+	ReminderAt            sql.NullTime
+	ReminderOffsetMinutes sql.NullInt64
+	ReminderSentAt        sql.NullTime
+	CompletedAt           sql.NullTime
 	Position         int64
 	RecurrenceRuleID sql.NullString
 	CreatedAt        time.Time

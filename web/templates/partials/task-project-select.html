@@ -3,19 +3,8 @@
   picker. Replaces a native <select> so each option can render its project
   icon (the icons are SVG, which a native <select> can't display).
 
-  Markup contract:
-    [data-project-select]            — root wrapper (relative-positioned).
-    [data-project-select-input]      — hidden <input name="project_id"> that
-                                       carries the value into the form. JS
-                                       dispatches `change` on this element so
-                                       the form's HTMX trigger fires.
-    [data-project-select-toggle]     — button that opens/closes the listbox.
-    [data-project-select-display]    — span inside the toggle showing the
-                                       current selection (icon + name).
-                                       Replaced with the picked option's
-                                       innerHTML on selection.
-    [data-project-select-list]       — the listbox (hidden by default).
-    [data-project-select-option]     — each clickable option button.
+  Markup contract: see [data-listbox] in web/static/js/app.js. Same shape is
+  reused by task-reminder-select.
 
   Data shape: taskDetailData { Task, Projects }.
 */}}
@@ -25,12 +14,12 @@
 {{$selectedID := ""}}{{if $task.ProjectID.Valid}}{{$selectedID = $task.ProjectID.String}}{{end}}
 {{$selectedIcon := "folder"}}{{if $task.ProjectIcon.Valid}}{{$selectedIcon = $task.ProjectIcon.String}}{{end}}
 
-<div data-project-select class="relative mt-1">
-  <input type="hidden" name="project_id" value="{{$selectedID}}" data-project-select-input>
-  <button type="button" data-project-select-toggle
+<div data-listbox class="relative mt-1">
+  <input type="hidden" name="project_id" value="{{$selectedID}}" data-listbox-input>
+  <button type="button" data-listbox-toggle
           aria-haspopup="listbox" aria-expanded="false"
           class="flex w-full items-center justify-between gap-2 rounded-lg border border-stone-200 bg-stone-50 px-3 py-2 text-sm text-stone-700 hover:border-stone-300 focus:border-amber-400 focus:outline-none focus:ring-1 focus:ring-amber-200">
-    <span class="flex min-w-0 items-center gap-2" data-project-select-display>
+    <span class="flex min-w-0 items-center gap-2" data-listbox-display>
       {{if $task.ProjectID.Valid}}
         {{template "project-icon" (dict "Name" $selectedIcon "Class" "h-4 w-4 shrink-0 text-stone-500")}}
         <span class="truncate">{{if $task.ProjectName.Valid}}{{$task.ProjectName.String}}{{end}}</span>
@@ -42,10 +31,10 @@
     {{template "icon-chevron-down" "h-4 w-4 shrink-0 text-stone-400"}}
   </button>
 
-  <ul data-project-select-list role="listbox"
+  <ul data-listbox-list role="listbox"
       class="hidden absolute left-0 right-0 z-20 mt-1 max-h-60 overflow-auto rounded-lg border border-stone-200 bg-white py-1 shadow-lg">
     <li>
-      <button type="button" role="option" data-project-select-option data-value=""
+      <button type="button" role="option" data-listbox-option data-value=""
               class="flex w-full items-center gap-2 px-3 py-2 text-left text-sm text-stone-700 hover:bg-stone-100">
         {{template "icon-inbox" "h-4 w-4 shrink-0 text-stone-500"}}
         <span class="truncate">Inbox</span>
@@ -54,7 +43,7 @@
     {{range .Projects}}
     {{$icon := "folder"}}{{if .Icon.Valid}}{{$icon = .Icon.String}}{{end}}
     <li>
-      <button type="button" role="option" data-project-select-option data-value="{{.ID}}"
+      <button type="button" role="option" data-listbox-option data-value="{{.ID}}"
               class="flex w-full items-center gap-2 px-3 py-2 text-left text-sm text-stone-700 hover:bg-stone-100">
         {{template "project-icon" (dict "Name" $icon "Class" "h-4 w-4 shrink-0 text-stone-500")}}
         <span class="truncate">{{.Name}}</span>

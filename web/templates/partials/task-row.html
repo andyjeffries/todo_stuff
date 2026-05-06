@@ -37,6 +37,7 @@
     {{if $t.IsImportant}}{{template "icon-star-solid" "h-3.5 w-3.5 shrink-0 text-amber-500"}}{{end}}
     {{if and $t.Notes.Valid (ne $t.Notes.String "")}}{{template "icon-note" "h-3.5 w-3.5 shrink-0 text-stone-400"}}{{end}}
     {{if $t.RecurrenceRuleID.Valid}}{{template "icon-arrow-path" "h-3.5 w-3.5 shrink-0 text-stone-400"}}{{end}}
+    {{if $t.ReminderAt.Valid}}{{template "icon-bell" "h-3.5 w-3.5 shrink-0 text-stone-400"}}{{end}}
   </div>
   {{$showProject := and (not $hide) $t.ProjectName.Valid}}
   {{if or $t.DueDate.Valid $showProject}}

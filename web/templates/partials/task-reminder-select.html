@@ -1,0 +1,65 @@
+{{/*
+  task-reminder-select — custom listbox for the reminder offset picker. Uses
+  the same [data-listbox] markup contract as task-project-select so both
+  share the JS in web/static/js/app.js.
+
+  Data shape: taskDetailData { Task }. Reads Task.ReminderOffsetMinutes and
+  selects the matching option; defaults to "No reminder" when unset.
+*/}}
+
+{{define "task-reminder-select"}}
+{{$task := .Task}}
+{{$offset := ""}}
+{{if $task.ReminderOffsetMinutes.Valid}}{{$offset = printf "%d" $task.ReminderOffsetMinutes.Int64}}{{end}}
+{{$selectedLabel := "None"}}
+{{if eq $offset "0"}}{{$selectedLabel = "At the time"}}
+{{else if eq $offset "5"}}{{$selectedLabel = "5 minutes before"}}
+{{else if eq $offset "10"}}{{$selectedLabel = "10 minutes before"}}
+{{else if eq $offset "15"}}{{$selectedLabel = "15 minutes before"}}
+{{else if eq $offset "30"}}{{$selectedLabel = "30 minutes before"}}
+{{else if eq $offset "60"}}{{$selectedLabel = "1 hour before"}}
+{{else if eq $offset "120"}}{{$selectedLabel = "2 hours before"}}
+{{else if eq $offset "240"}}{{$selectedLabel = "4 hours before"}}
+{{else if eq $offset "480"}}{{$selectedLabel = "8 hours before"}}
+{{else if eq $offset "720"}}{{$selectedLabel = "12 hours before"}}
+{{else if eq $offset "1440"}}{{$selectedLabel = "24 hours before"}}{{end}}
+
+<div data-listbox class="relative mt-1">
+  <input type="hidden" name="reminder_offset" value="{{$offset}}" data-listbox-input>
+  <button type="button" data-listbox-toggle
+          aria-haspopup="listbox" aria-expanded="false"
+          class="flex w-full items-center justify-between gap-2 rounded-lg border border-stone-200 bg-stone-50 px-3 py-2 text-sm text-stone-700 hover:border-stone-300 focus:border-amber-400 focus:outline-none focus:ring-1 focus:ring-amber-200">
+    <span class="flex min-w-0 items-center gap-2" data-listbox-display>
+      {{template "icon-bell" "h-4 w-4 shrink-0 text-stone-500"}}
+      <span class="truncate">{{$selectedLabel}}</span>
+    </span>
+    {{template "icon-chevron-down" "h-4 w-4 shrink-0 text-stone-400"}}
+  </button>
+
+  <ul data-listbox-list role="listbox"
+      class="hidden absolute left-0 right-0 z-20 mt-1 max-h-60 overflow-auto rounded-lg border border-stone-200 bg-white py-1 shadow-lg">
+    {{template "task-reminder-option" (dict "Value" ""     "Label" "None")}}
+    {{template "task-reminder-option" (dict "Value" "0"    "Label" "At the time")}}
+    {{template "task-reminder-option" (dict "Value" "5"    "Label" "5 minutes before")}}
+    {{template "task-reminder-option" (dict "Value" "10"   "Label" "10 minutes before")}}
+    {{template "task-reminder-option" (dict "Value" "15"   "Label" "15 minutes before")}}
+    {{template "task-reminder-option" (dict "Value" "30"   "Label" "30 minutes before")}}
+    {{template "task-reminder-option" (dict "Value" "60"   "Label" "1 hour before")}}
+    {{template "task-reminder-option" (dict "Value" "120"  "Label" "2 hours before")}}
+    {{template "task-reminder-option" (dict "Value" "240"  "Label" "4 hours before")}}
+    {{template "task-reminder-option" (dict "Value" "480"  "Label" "8 hours before")}}
+    {{template "task-reminder-option" (dict "Value" "720"  "Label" "12 hours before")}}
+    {{template "task-reminder-option" (dict "Value" "1440" "Label" "24 hours before")}}
+  </ul>
+</div>
+{{end}}
+
+{{define "task-reminder-option"}}
+<li>
+  <button type="button" role="option" data-listbox-option data-value="{{.Value}}"
+          class="flex w-full items-center gap-2 px-3 py-2 text-left text-sm text-stone-700 hover:bg-stone-100">
+    {{template "icon-bell" "h-4 w-4 shrink-0 text-stone-500"}}
+    <span class="truncate">{{.Label}}</span>
+  </button>
+</li>
+{{end}}

@@ -226,13 +226,14 @@ func viewQuery(userID string, view View, now time.Time) (where, order string, ar
 // TaskPatch is a partial update: nil fields are left alone. To clear a
 // nullable field, pass a typed sql.NullX with Valid=false.
 type TaskPatch struct {
-	Title       *string
-	Notes       *sql.NullString
-	ProjectID   *sql.NullString
-	IsImportant *bool
-	DueDate     *sql.NullTime
-	DueTime     *sql.NullString
-	ReminderAt  *sql.NullTime
+	Title                 *string
+	Notes                 *sql.NullString
+	ProjectID             *sql.NullString
+	IsImportant           *bool
+	DueDate               *sql.NullTime
+	DueTime               *sql.NullString
+	ReminderAt            *sql.NullTime
+	ReminderOffsetMinutes *sql.NullInt64
 }
 
 func (t *Tasks) Update(ctx context.Context, userID, id string, p TaskPatch) (*models.Task, error) {
@@ -272,18 +273,32 @@ func (t *Tasks) Update(ctx context.Context, userID, id string, p TaskPatch) (*mo
 	if p.DueDate != nil {
 		sets = append(sets, "due_date = ?")
 		args = append(args, *p.DueDate)
-		// Clearing the date implicitly clears the time.
+		// Clearing the date implicitly clears the time AND the reminder.
+		// A reminder is meaningless without a due datetime to anchor against.
 		if !p.DueDate.Valid {
-			sets = append(sets, "due_time = NULL")
+			sets = append(sets, "due_time = NULL",
+				"reminder_at = NULL", "reminder_offset_minutes = NULL",
+				"reminder_sent_at = NULL")
 		}
 	}
 	if p.DueTime != nil {
 		sets = append(sets, "due_time = ?")
 		args = append(args, *p.DueTime)
+		// Clearing the time also clears the reminder.
+		if !p.DueTime.Valid {
+			sets = append(sets, "reminder_at = NULL",
+				"reminder_offset_minutes = NULL", "reminder_sent_at = NULL")
+		}
 	}
 	if p.ReminderAt != nil {
-		sets = append(sets, "reminder_at = ?")
+		// Reset the delivered marker when the reminder changes, so a freshly
+		// scheduled (or rescheduled) reminder fires once polling catches up.
+		sets = append(sets, "reminder_at = ?", "reminder_sent_at = NULL")
 		args = append(args, *p.ReminderAt)
+	}
+	if p.ReminderOffsetMinutes != nil {
+		sets = append(sets, "reminder_offset_minutes = ?")
+		args = append(args, *p.ReminderOffsetMinutes)
 	}
 
 	if len(sets) == 0 {
@@ -374,6 +389,53 @@ func (t *Tasks) Uncomplete(ctx context.Context, userID, id string) (*models.Task
 	return t.Get(ctx, userID, id)
 }
 
+// ----------------------------------------------------------- Reminders ---
+
+// DueReminder is the slim shape returned by /api/reminders/due. We send only
+// what the browser needs for the notification body, not the full task row.
+type DueReminder struct {
+	ID    string
+	Title string
+	Notes string // plaintext source — browser notifications don't render HTML
+}
+
+// PopDueReminders atomically returns and marks-as-delivered the user's
+// undelivered reminders whose reminder_at is in the past. The marking step
+// uses a single UPDATE…RETURNING so two concurrent polls can't both deliver
+// the same row.
+func (t *Tasks) PopDueReminders(ctx context.Context, userID string) ([]DueReminder, error) {
+	now := t.now()
+	rows, err := t.db.QueryContext(ctx, `
+        UPDATE tasks
+           SET reminder_sent_at = ?
+         WHERE user_id = ?
+           AND reminder_at IS NOT NULL
+           AND reminder_at <= ?
+           AND reminder_sent_at IS NULL
+           AND completed_at IS NULL
+        RETURNING id, title, notes`,
+		now, userID, now,
+	)
+	if err != nil {
+		return nil, fmt.Errorf("pop due reminders: %w", err)
+	}
+	defer rows.Close()
+
+	var out []DueReminder
+	for rows.Next() {
+		var (
+			id    string
+			title string
+			notes sql.NullString
+		)
+		if err := rows.Scan(&id, &title, &notes); err != nil {
+			return nil, fmt.Errorf("scan due reminder: %w", err)
+		}
+		out = append(out, DueReminder{ID: id, Title: title, Notes: notes.String})
+	}
+	return out, rows.Err()
+}
+
 // ----------------------------------------------------------------- Delete ---
 
 func (t *Tasks) Delete(ctx context.Context, userID, id string) error {
@@ -394,8 +456,9 @@ func (t *Tasks) Delete(ctx context.Context, userID, id string) error {
 // LEFT JOIN means tasks without a project come back with NULL/NULL there.
 const taskSelect = `
 SELECT t.id, t.user_id, t.project_id, t.title, t.notes, t.notes_html,
-       t.is_important, t.due_date, t.due_time, t.reminder_at, t.completed_at,
-       t.position, t.recurrence_rule_id, t.created_at, t.updated_at,
+       t.is_important, t.due_date, t.due_time,
+       t.reminder_at, t.reminder_offset_minutes, t.reminder_sent_at,
+       t.completed_at, t.position, t.recurrence_rule_id, t.created_at, t.updated_at,
        p.name, p.icon
   FROM tasks t
   LEFT JOIN projects p ON p.id = t.project_id`
@@ -408,8 +471,9 @@ func scanTask(s scanner) (*models.Task, error) {
 	var t models.Task
 	err := s.Scan(
 		&t.ID, &t.UserID, &t.ProjectID, &t.Title, &t.Notes, &t.NotesHTML,
-		&t.IsImportant, &t.DueDate, &t.DueTime, &t.ReminderAt, &t.CompletedAt,
-		&t.Position, &t.RecurrenceRuleID, &t.CreatedAt, &t.UpdatedAt,
+		&t.IsImportant, &t.DueDate, &t.DueTime,
+		&t.ReminderAt, &t.ReminderOffsetMinutes, &t.ReminderSentAt,
+		&t.CompletedAt, &t.Position, &t.RecurrenceRuleID, &t.CreatedAt, &t.UpdatedAt,
 		&t.ProjectName, &t.ProjectIcon,
 	)
 	if errors.Is(err, sql.ErrNoRows) {
