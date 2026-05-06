@@ -1,0 +1,85 @@
+{{define "app"}}<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>{{.Title}} · TodoStuff</title>
+  <link rel="stylesheet" href="/static/css/app.css">
+</head>
+<body class="h-full bg-stone-50 text-stone-900 antialiased">
+  <div class="flex h-screen overflow-hidden">
+    {{template "sidebar" .}}
+
+    <main class="flex-1 flex flex-col min-w-0 overflow-hidden">
+      <div class="flex-1 overflow-y-auto">
+        <div class="mx-auto w-full max-w-2xl px-6 sm:px-8 py-10">
+          {{template "app-content" .}}
+        </div>
+      </div>
+    </main>
+  </div>
+
+  <div id="detail-backdrop"
+       class="fixed inset-0 z-30 bg-stone-900/20 opacity-0 pointer-events-none transition-opacity duration-300 ease-out"
+       aria-hidden="true"></div>
+
+  <aside id="detail-panel"
+         role="dialog"
+         aria-modal="true"
+         aria-hidden="true"
+         tabindex="-1"
+         class="fixed inset-y-0 right-0 z-40 flex w-full max-w-md flex-col border-l border-stone-200 bg-white shadow-xl
+                translate-x-full transition-transform duration-300 ease-out">
+    <header class="flex items-center justify-between px-5 py-3 border-b border-stone-200">
+      <h2 class="text-sm font-medium text-stone-700">Task</h2>
+      <button type="button" data-detail-close
+              class="rounded-md p-1 text-stone-400 hover:bg-stone-100 hover:text-stone-700"
+              aria-label="Close task detail">
+        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="h-4 w-4"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18 18 6M6 6l12 12"/></svg>
+      </button>
+    </header>
+    <div id="detail-panel-body" class="flex-1 overflow-y-auto p-5">
+      {{/* TEMP: M5 dummy content so the slide-over has something to show. */}}
+      <div class="space-y-5">
+        <div class="flex items-start gap-3">
+          <span class="mt-0.5 inline-flex h-5 w-5 shrink-0 items-center justify-center rounded-full border-2 border-stone-300"></span>
+          <div class="flex-1">
+            <input type="text" value="Draft Q3 planning doc"
+                   class="w-full bg-transparent text-base font-medium text-stone-900 focus:outline-none"
+                   readonly>
+            <div class="mt-1 flex items-center gap-2 text-xs text-stone-500">
+              {{template "icon-star-solid" "h-3.5 w-3.5 text-amber-500"}}
+              <span>Today · Work</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="rounded-lg border border-stone-200 bg-stone-50 p-3 text-sm text-stone-700">
+          <p class="font-medium text-stone-900">Notes</p>
+          <p class="mt-1 leading-relaxed">Pull together objectives, headcount asks, and risks. Share the rough draft with the team before EOD Thursday for feedback.</p>
+        </div>
+
+        <dl class="space-y-3 text-sm">
+          <div class="flex justify-between">
+            <dt class="text-stone-500">Due</dt>
+            <dd class="text-stone-700">Today, 5:00 PM</dd>
+          </div>
+          <div class="flex justify-between">
+            <dt class="text-stone-500">Project</dt>
+            <dd class="text-stone-700">Work</dd>
+          </div>
+          <div class="flex justify-between">
+            <dt class="text-stone-500">Reminder</dt>
+            <dd class="text-stone-700">30 min before</dd>
+          </div>
+        </dl>
+
+        <p class="text-xs text-stone-400">Dummy content — real task editing lands in Milestone 6.</p>
+      </div>
+    </div>
+  </aside>
+
+  <script src="/static/js/app.js" defer></script>
+</body>
+</html>
+{{end}}

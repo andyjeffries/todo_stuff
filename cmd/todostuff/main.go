@@ -77,6 +77,10 @@ func main() {
 		pr.Use(appmw.RequireAuth(authSvc))
 		pr.Post("/logout", h.Logout)
 		pr.Get("/today", h.Today)
+		pr.Get("/inbox", h.Inbox)
+		pr.Get("/upcoming", h.Upcoming)
+		pr.Get("/anytime", h.Anytime)
+		pr.Get("/logbook", h.Logbook)
 	})
 
 	srv := &http.Server{
