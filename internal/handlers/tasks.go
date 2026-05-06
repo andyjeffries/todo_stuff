@@ -121,6 +121,44 @@ func (h *Handlers) TaskUpdate(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
+// TaskComplete handles POST /tasks/{id}/complete. Returns an empty 200 so
+// the calling list row is swapped out of the DOM. The detail panel (if
+// open against this task) is closed by the row form's onclick handler.
+func (h *Handlers) TaskComplete(w http.ResponseWriter, r *http.Request) {
+	user, _ := auth.UserFromContext(r.Context())
+	id := chi.URLParam(r, "id")
+
+	if _, err := h.Tasks.Complete(r.Context(), user.ID, id); err != nil {
+		if errors.Is(err, services.ErrTaskNotFound) {
+			http.NotFound(w, r)
+			return
+		}
+		slog.Error("complete task", "err", err)
+		http.Error(w, "internal error", http.StatusInternalServerError)
+		return
+	}
+	w.WriteHeader(http.StatusOK)
+}
+
+// TaskUncomplete handles POST /tasks/{id}/uncomplete. Mirrors TaskComplete:
+// the row is swapped out of the Logbook list; the task is now back in the
+// active smart lists.
+func (h *Handlers) TaskUncomplete(w http.ResponseWriter, r *http.Request) {
+	user, _ := auth.UserFromContext(r.Context())
+	id := chi.URLParam(r, "id")
+
+	if _, err := h.Tasks.Uncomplete(r.Context(), user.ID, id); err != nil {
+		if errors.Is(err, services.ErrTaskNotFound) {
+			http.NotFound(w, r)
+			return
+		}
+		slog.Error("uncomplete task", "err", err)
+		http.Error(w, "internal error", http.StatusInternalServerError)
+		return
+	}
+	w.WriteHeader(http.StatusOK)
+}
+
 // TaskDelete handles DELETE /tasks/{id}. Returns an empty 200 — HTMX will
 // swap the row out of the DOM via hx-target.
 func (h *Handlers) TaskDelete(w http.ResponseWriter, r *http.Request) {

@@ -88,6 +88,8 @@ func main() {
 		pr.Get("/tasks/{id}", h.TaskDetail)
 		pr.Put("/tasks/{id}", h.TaskUpdate)
 		pr.Delete("/tasks/{id}", h.TaskDelete)
+		pr.Post("/tasks/{id}/complete", h.TaskComplete)
+		pr.Post("/tasks/{id}/uncomplete", h.TaskUncomplete)
 	})
 
 	srv := &http.Server{

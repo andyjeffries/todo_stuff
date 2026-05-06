@@ -240,6 +240,47 @@ func (t *Tasks) Update(ctx context.Context, userID, id string, p TaskPatch) (*mo
 	return t.Get(ctx, userID, id)
 }
 
+// ----------------------------------------------------------- Complete/Uncomplete ---
+
+// Complete sets completed_at to "now" and returns the updated task.
+// Idempotent: completing an already-completed task leaves the original
+// completion timestamp in place.
+func (t *Tasks) Complete(ctx context.Context, userID, id string) (*models.Task, error) {
+	now := t.now()
+	res, err := t.db.ExecContext(ctx, `
+        UPDATE tasks
+           SET completed_at = COALESCE(completed_at, ?),
+               updated_at = ?
+         WHERE id = ? AND user_id = ?`,
+		now, now, id, userID,
+	)
+	if err != nil {
+		return nil, fmt.Errorf("complete task: %w", err)
+	}
+	if n, _ := res.RowsAffected(); n == 0 {
+		return nil, ErrTaskNotFound
+	}
+	return t.Get(ctx, userID, id)
+}
+
+// Uncomplete clears completed_at, restoring the task to the active lists.
+func (t *Tasks) Uncomplete(ctx context.Context, userID, id string) (*models.Task, error) {
+	res, err := t.db.ExecContext(ctx, `
+        UPDATE tasks
+           SET completed_at = NULL,
+               updated_at = ?
+         WHERE id = ? AND user_id = ?`,
+		t.now(), id, userID,
+	)
+	if err != nil {
+		return nil, fmt.Errorf("uncomplete task: %w", err)
+	}
+	if n, _ := res.RowsAffected(); n == 0 {
+		return nil, ErrTaskNotFound
+	}
+	return t.Get(ctx, userID, id)
+}
+
 // ----------------------------------------------------------------- Delete ---
 
 func (t *Tasks) Delete(ctx context.Context, userID, id string) error {

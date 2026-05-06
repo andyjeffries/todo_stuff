@@ -7,8 +7,17 @@
   {{with .Subheading}}<p class="mt-1 text-sm text-stone-500">{{.}}</p>{{end}}
 </header>
 
-{{if .Tasks}}
-{{template "task-list" .}}
+{{if .Groups}}
+<div class="space-y-8">
+  {{range .Groups}}
+  <section>
+    <h2 class="mb-2 text-xs font-semibold uppercase tracking-wider text-stone-500">{{.Label}}</h2>
+    <ul class="-mx-3 divide-y divide-stone-100">
+      {{range .Tasks}}{{template "task-row" .}}{{end}}
+    </ul>
+  </section>
+  {{end}}
+</div>
 {{else}}
 <div class="rounded-2xl border border-dashed border-stone-300 bg-white px-6 py-16 text-center">
   <div class="mx-auto mb-3 inline-flex h-10 w-10 items-center justify-center rounded-full bg-stone-100 text-stone-500">

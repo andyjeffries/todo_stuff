@@ -2,3 +2,12 @@
 
 @source "../../templates/**/*.html";
 @source "../js/**/*.js";
+
+/* HTMX leaves htmx-swapping on an element for the configured swap delay before
+   deleting it. Used by task-row complete/uncomplete to fade out instead of
+   blinking out. Tied to the 300ms in `hx-swap="delete swap:300ms"`. */
+[id^="task-"].htmx-swapping {
+  opacity: 0;
+  transform: translateX(8px);
+  transition: opacity 300ms ease, transform 300ms ease;
+}
