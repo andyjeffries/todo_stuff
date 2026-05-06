@@ -62,6 +62,9 @@ func main() {
 
 	// Public
 	r.Get("/health", handlers.Health)
+	r.Get("/", h.Root)
+	r.Get("/setup", h.SetupPage)
+	r.Post("/setup", h.SetupSubmit)
 	r.Get("/login", h.LoginPage)
 	r.Post("/login", h.LoginSubmit)
 
