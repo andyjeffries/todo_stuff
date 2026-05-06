@@ -82,3 +82,23 @@
 {{define "task-row-oob-delete"}}
 <li id="task-{{.ID}}" hx-swap-oob="delete"></li>
 {{end}}
+
+
+{{/*
+  task-update-response — the shape PUT /tasks/{id} returns.
+
+  Always emits the notes-display OOB so the rendered-markdown preview in the
+  detail panel stays in sync with whatever the user just typed. The row swap
+  is either an in-place update or a delete depending on whether the task
+  still belongs to the current list view.
+
+  Data shape: { Row taskRowData, Removed bool }.
+*/}}
+{{define "task-update-response"}}
+{{if .Removed}}
+{{template "task-row-oob-delete" .Row.Task}}
+{{else}}
+{{template "task-row-oob" .Row}}
+{{end}}
+{{template "task-notes-display-oob" .Row.Task}}
+{{end}}

@@ -213,23 +213,26 @@ func (h *Handlers) TaskUpdate(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// OOB swap. If the task still belongs to the current view, replace the
-	// row in place (preserves scroll position, avoids flicker, keeps things
-	// like the Important star toggling instantly). If the update moved the
-	// task out of the current view's filter, send an OOB delete so the row
-	// slides out — e.g. setting a date on an Inbox task, or pushing a Today
-	// task to a future date.
+	// OOB response. Always includes a notes-display OOB swap (keeps the
+	// detail panel's rendered preview in sync with the textarea source), plus
+	// either an in-place row replace (the task still belongs to this view) or
+	// an OOB delete (the update pushed it out — e.g. setting a date on an
+	// Inbox task, or moving a Today task to tomorrow).
 	hxURL := r.Header.Get("Hx-Current-Url")
-	if !taskBelongsToCurrentView(task, hxURL, time.Now()) {
-		if err := h.Render.Render(w, http.StatusOK, "today", "task-row-oob-delete", *task); err != nil {
-			slog.Error("render task-row-oob-delete", "err", err)
-		}
-		return
+	resp := taskUpdateResponse{
+		Row:     taskRowData{Task: *task, HideProject: hideProjectForRequest(r)},
+		Removed: !taskBelongsToCurrentView(task, hxURL, time.Now()),
 	}
-	row := taskRowData{Task: *task, HideProject: hideProjectForRequest(r)}
-	if err := h.Render.Render(w, http.StatusOK, "today", "task-row-oob", row); err != nil {
-		slog.Error("render task-row-oob", "err", err)
+	if err := h.Render.Render(w, http.StatusOK, "today", "task-update-response", resp); err != nil {
+		slog.Error("render task-update-response", "err", err)
 	}
+}
+
+// taskUpdateResponse is the wrapper shape the task-update-response template
+// expects. Removed=true sends an OOB delete instead of a row replace.
+type taskUpdateResponse struct {
+	Row     taskRowData
+	Removed bool
 }
 
 // TaskComplete handles POST /tasks/{id}/complete. Returns an empty 200 so

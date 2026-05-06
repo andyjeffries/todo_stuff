@@ -10,21 +10,23 @@
            class="w-full bg-transparent text-base font-medium text-stone-900 focus:outline-none">
   </div>
 
-  <div>
+  {{/* Click-to-edit notes. The rendered preview is the default state.
+       Clicking it hides the preview and reveals the markdown source textarea
+       (focused, caret at end). Blurring the textarea hides it and shows the
+       preview again. The form's existing change-debounced HTMX PUT picks up
+       saved edits, and the server's response includes an OOB swap of the
+       preview so it stays in sync with the new source. */}}
+  <div data-notes-block>
     <label class="text-xs uppercase tracking-wider text-stone-500">Notes</label>
-    <textarea name="notes" rows="4" placeholder="Markdown supported in a future milestone…"
-              class="mt-1 w-full rounded-lg border border-stone-200 bg-stone-50 px-3 py-2 text-sm text-stone-700 focus:border-amber-400 focus:outline-none focus:ring-1 focus:ring-amber-200">{{if $task.Notes.Valid}}{{$task.Notes.String}}{{end}}</textarea>
+    {{template "task-notes-display" $task}}
+    <textarea data-notes-edit name="notes" rows="4"
+              placeholder="Add notes — Markdown supported (**bold**, lists, links)…"
+              class="hidden mt-1 w-full rounded-lg border border-stone-200 bg-stone-50 px-3 py-2 text-sm text-stone-700 focus:border-amber-400 focus:outline-none focus:ring-1 focus:ring-amber-200">{{if $task.Notes.Valid}}{{$task.Notes.String}}{{end}}</textarea>
   </div>
 
   <div>
     <label class="text-xs uppercase tracking-wider text-stone-500">Project</label>
-    <select name="project_id"
-            class="mt-1 w-full rounded-lg border border-stone-200 bg-stone-50 px-3 py-2 text-sm text-stone-700 focus:border-amber-400 focus:outline-none focus:ring-1 focus:ring-amber-200">
-      <option value=""{{if not $task.ProjectID.Valid}} selected{{end}}>Inbox</option>
-      {{range .Projects}}
-      <option value="{{.ID}}"{{if and $task.ProjectID.Valid (eq $task.ProjectID.String .ID)}} selected{{end}}>{{if .Icon.Valid}}{{.Icon.String}} {{end}}{{.Name}}</option>
-      {{end}}
-    </select>
+    {{template "task-project-select" .}}
   </div>
 
   <div data-due-fields class="space-y-2">

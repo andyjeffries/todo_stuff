@@ -4,6 +4,7 @@
 package services
 
 import (
+	"bytes"
 	"context"
 	"database/sql"
 	"errors"
@@ -13,7 +14,28 @@ import (
 
 	"github.com/andyjessop/todostuff/internal/models"
 	"github.com/google/uuid"
+	"github.com/yuin/goldmark"
+	"github.com/yuin/goldmark/extension"
 )
+
+// markdown is the shared goldmark renderer. Default options leave HTML
+// escaping ON, so user-supplied notes can't smuggle <script> tags into the
+// detail panel. GFM gives us tables, strikethrough, and autolinks.
+var markdown = goldmark.New(goldmark.WithExtensions(extension.GFM))
+
+// renderNotesHTML converts notes markdown to HTML. Returns Valid=false for
+// empty input so the column is stored as NULL rather than an empty string.
+func renderNotesHTML(src string) (sql.NullString, error) {
+	src = strings.TrimSpace(src)
+	if src == "" {
+		return sql.NullString{}, nil
+	}
+	var buf bytes.Buffer
+	if err := markdown.Convert([]byte(src), &buf); err != nil {
+		return sql.NullString{}, fmt.Errorf("render notes markdown: %w", err)
+	}
+	return sql.NullString{String: buf.String(), Valid: true}, nil
+}
 
 var (
 	ErrTaskNotFound = errors.New("services: task not found")
@@ -68,6 +90,11 @@ func (t *Tasks) Create(ctx context.Context, userID string, p CreateTaskParams) (
 	}
 	if p.Notes = strings.TrimSpace(p.Notes); p.Notes != "" {
 		task.Notes = sql.NullString{String: p.Notes, Valid: true}
+		html, err := renderNotesHTML(p.Notes)
+		if err != nil {
+			return nil, err
+		}
+		task.NotesHTML = html
 	}
 	if pid := strings.TrimSpace(p.ProjectID); pid != "" {
 		task.ProjectID = sql.NullString{String: pid, Valid: true}
@@ -82,17 +109,17 @@ func (t *Tasks) Create(ctx context.Context, userID string, p CreateTaskParams) (
 	// Position: append to the end of the user's list.
 	_, err := t.db.ExecContext(ctx, `
         INSERT INTO tasks (
-            id, user_id, project_id, title, notes,
+            id, user_id, project_id, title, notes, notes_html,
             is_important, due_date, due_time,
             position, created_at, updated_at
         ) VALUES (
-            ?, ?, ?, ?, ?,
+            ?, ?, ?, ?, ?, ?,
             ?, ?, ?,
             COALESCE((SELECT MAX(position) FROM tasks WHERE user_id = ?), 0) + 1,
             ?, ?
         )
     `,
-		task.ID, task.UserID, task.ProjectID, task.Title, task.Notes,
+		task.ID, task.UserID, task.ProjectID, task.Title, task.Notes, task.NotesHTML,
 		task.IsImportant, task.DueDate, task.DueTime,
 		userID,
 		task.CreatedAt, task.UpdatedAt,
@@ -221,8 +248,18 @@ func (t *Tasks) Update(ctx context.Context, userID, id string, p TaskPatch) (*mo
 		args = append(args, title)
 	}
 	if p.Notes != nil {
-		sets = append(sets, "notes = ?", "notes_html = NULL")
-		args = append(args, *p.Notes)
+		// Recompute notes_html from the new source. An empty/cleared notes
+		// value yields a NULL html column too, keeping the two in sync.
+		var html sql.NullString
+		if p.Notes.Valid {
+			rendered, err := renderNotesHTML(p.Notes.String)
+			if err != nil {
+				return nil, err
+			}
+			html = rendered
+		}
+		sets = append(sets, "notes = ?", "notes_html = ?")
+		args = append(args, *p.Notes, html)
 	}
 	if p.ProjectID != nil {
 		sets = append(sets, "project_id = ?")

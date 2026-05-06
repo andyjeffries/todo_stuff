@@ -35,7 +35,11 @@
   });
 
   document.addEventListener('keydown', function (e) {
-    if (e.key === 'Escape' && panel.getAttribute('aria-hidden') === 'false') close();
+    if (e.key !== 'Escape') return;
+    // Don't dismiss the panel if a child overlay is consuming the Escape —
+    // e.g. the project-select dropdown should close first.
+    if (document.querySelector('[data-project-select-list]:not(.hidden)')) return;
+    if (panel.getAttribute('aria-hidden') === 'false') close();
   });
 
   window.TodoStuff = window.TodoStuff || {};
@@ -198,6 +202,98 @@
         break;
     }
     dateInput.dispatchEvent(new Event('change', { bubbles: true }));
+  });
+})();
+
+// Click-to-edit notes in the task detail panel. The detail panel renders the
+// notes preview by default; clicking it hides the preview and reveals a
+// textarea with the markdown source. Blurring the textarea swaps back. The
+// form's existing change-debounced HTMX PUT picks up edits, and the server's
+// OOB response replaces the preview's HTML so it stays in sync.
+(function () {
+  document.addEventListener('click', function (e) {
+    // Let links inside rendered notes navigate normally.
+    if (e.target.closest('a')) return;
+    const display = e.target.closest('[data-notes-display]');
+    if (!display) return;
+    const block = display.closest('[data-notes-block]');
+    const textarea = block && block.querySelector('[data-notes-edit]');
+    if (!textarea) return;
+    display.classList.add('hidden');
+    textarea.classList.remove('hidden');
+    textarea.focus();
+    const len = textarea.value.length;
+    try { textarea.setSelectionRange(len, len); } catch (_) {}
+  });
+
+  document.addEventListener('focusout', function (e) {
+    const textarea = e.target.closest('[data-notes-edit]');
+    if (!textarea) return;
+    const block = textarea.closest('[data-notes-block]');
+    const display = block && block.querySelector('[data-notes-display]');
+    if (!display) return;
+    textarea.classList.add('hidden');
+    display.classList.remove('hidden');
+  });
+})();
+
+// Custom project select in the task detail panel. Replaces a native <select>
+// so each option can render its project icon (SVGs, which a native <select>
+// can't render). The hidden input carries the value to the form; selecting
+// an option dispatches `change` on it so the form's HTMX trigger fires.
+(function () {
+  function closeAll(except) {
+    document.querySelectorAll('[data-project-select]').forEach(function (el) {
+      if (el === except) return;
+      const list = el.querySelector('[data-project-select-list]');
+      const toggle = el.querySelector('[data-project-select-toggle]');
+      if (list) list.classList.add('hidden');
+      if (toggle) toggle.setAttribute('aria-expanded', 'false');
+    });
+  }
+
+  document.addEventListener('click', function (e) {
+    const toggle = e.target.closest('[data-project-select-toggle]');
+    if (toggle) {
+      e.preventDefault();
+      const wrap = toggle.closest('[data-project-select]');
+      if (!wrap) return;
+      const list = wrap.querySelector('[data-project-select-list]');
+      if (!list) return;
+      const willOpen = list.classList.contains('hidden');
+      closeAll(willOpen ? wrap : null);
+      list.classList.toggle('hidden', !willOpen);
+      toggle.setAttribute('aria-expanded', willOpen ? 'true' : 'false');
+      return;
+    }
+
+    const opt = e.target.closest('[data-project-select-option]');
+    if (opt) {
+      e.preventDefault();
+      const wrap = opt.closest('[data-project-select]');
+      if (!wrap) return;
+      const input = wrap.querySelector('[data-project-select-input]');
+      const display = wrap.querySelector('[data-project-select-display]');
+      if (!input || !display) return;
+      const newValue = opt.dataset.value || '';
+      const old = input.value;
+      input.value = newValue;
+      // Mirror the picked option's content into the toggle button so the
+      // selection's icon + name show up immediately, no round-trip needed.
+      display.innerHTML = opt.innerHTML;
+      closeAll(null);
+      if (newValue !== old) {
+        input.dispatchEvent(new Event('change', { bubbles: true }));
+      }
+      return;
+    }
+
+    // Click outside any open select → close them.
+    if (!e.target.closest('[data-project-select]')) closeAll(null);
+  });
+
+  document.addEventListener('keydown', function (e) {
+    if (e.key === 'Escape') closeAll(null);
   });
 })();
 

@@ -1,0 +1,34 @@
+{{/*
+  task-notes-display — the rendered-markdown view for a task's notes shown
+  in the detail panel. Two flavours:
+
+    task-notes-display       — regular render (initial detail-panel load).
+    task-notes-display-oob   — same content with `hx-swap-oob="outerHTML"`,
+                               returned as part of every PUT /tasks/{id}
+                               response so the preview stays in sync after
+                               the textarea is edited.
+
+  Data shape: models.Task.
+*/}}
+
+{{define "task-notes-display-body"}}
+{{if and .NotesHTML.Valid (ne .NotesHTML.String "")}}
+  <div class="notes-preview text-sm text-stone-700">{{safeHTML .NotesHTML.String}}</div>
+{{else}}
+  <div class="text-sm text-stone-400">Add notes — Markdown supported.</div>
+{{end}}
+{{end}}
+
+{{define "task-notes-display"}}
+<div id="task-notes-display-{{.ID}}" data-notes-display
+     class="mt-1 cursor-text rounded-lg border border-stone-200 bg-stone-50 px-3 py-2 hover:border-stone-300">
+  {{template "task-notes-display-body" .}}
+</div>
+{{end}}
+
+{{define "task-notes-display-oob"}}
+<div id="task-notes-display-{{.ID}}" hx-swap-oob="outerHTML" data-notes-display
+     class="mt-1 cursor-text rounded-lg border border-stone-200 bg-stone-50 px-3 py-2 hover:border-stone-300">
+  {{template "task-notes-display-body" .}}
+</div>
+{{end}}

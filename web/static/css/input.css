@@ -11,3 +11,23 @@
   transform: translateX(8px);
   transition: opacity 300ms ease, transform 300ms ease;
 }
+
+/* Rendered markdown preview in the task detail panel. Tailwind's typography
+   plugin would do this for us, but we don't want the dep just for one block. */
+.notes-preview > * + * { margin-top: 0.5rem; }
+.notes-preview h1 { font-size: 1.125rem; font-weight: 600; color: #1c1917; }
+.notes-preview h2 { font-size: 1rem;     font-weight: 600; color: #1c1917; }
+.notes-preview h3 { font-size: 0.95rem;  font-weight: 600; color: #1c1917; }
+.notes-preview p  { line-height: 1.55; }
+.notes-preview a  { color: #b45309; text-decoration: underline; }
+.notes-preview ul { list-style: disc;    padding-left: 1.25rem; }
+.notes-preview ol { list-style: decimal; padding-left: 1.25rem; }
+.notes-preview li + li { margin-top: 0.125rem; }
+.notes-preview code { background: #f5f5f4; border-radius: 4px; padding: 0 0.25rem; font-size: 0.85em; }
+.notes-preview pre  { background: #f5f5f4; border-radius: 6px; padding: 0.5rem 0.75rem; overflow-x: auto; }
+.notes-preview pre code { background: transparent; padding: 0; }
+.notes-preview blockquote { border-left: 3px solid #e7e5e4; padding-left: 0.75rem; color: #57534e; }
+.notes-preview hr { border: 0; border-top: 1px solid #e7e5e4; }
+.notes-preview table { width: 100%; border-collapse: collapse; }
+.notes-preview th, .notes-preview td { border: 1px solid #e7e5e4; padding: 0.25rem 0.5rem; text-align: left; }
+.notes-preview del { text-decoration: line-through; color: #78716c; }
