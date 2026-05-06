@@ -7,11 +7,15 @@
   {{with .Subheading}}<p class="mt-1 text-sm text-stone-500">{{.}}</p>{{end}}
 </header>
 
+{{if .Tasks}}
+{{template "task-list" .}}
+{{else}}
 <div class="rounded-2xl border border-dashed border-stone-300 bg-white px-6 py-16 text-center">
   <div class="mx-auto mb-3 inline-flex h-10 w-10 items-center justify-center rounded-full bg-stone-100 text-stone-500">
     {{template "icon-inbox" "h-5 w-5"}}
   </div>
   <p class="text-sm font-medium text-stone-700">Your Inbox is empty.</p>
-  <p class="mt-1 text-xs text-stone-500">Drop quick tasks here when you don't know where they belong yet.</p>
+  <p class="mt-1 text-xs text-stone-500">Anything captured without a project or due date lands here.</p>
 </div>
+{{end}}
 {{end}}

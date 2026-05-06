@@ -16,6 +16,7 @@ import (
 	"github.com/andyjessop/todostuff/internal/handlers"
 	appmw "github.com/andyjessop/todostuff/internal/middleware"
 	"github.com/andyjessop/todostuff/internal/render"
+	"github.com/andyjessop/todostuff/internal/services"
 	"github.com/andyjessop/todostuff/migrations"
 	"github.com/andyjessop/todostuff/web"
 	"github.com/go-chi/chi/v5"
@@ -44,6 +45,7 @@ func main() {
 	logger.Info("database ready", "path", dbPath)
 
 	authSvc := auth.NewService(db, cookieSecure)
+	tasksSvc := services.NewTasks(db)
 
 	renderer, err := render.New(web.TemplateFS)
 	if err != nil {
@@ -51,7 +53,7 @@ func main() {
 		os.Exit(1)
 	}
 
-	h := handlers.New(authSvc, renderer)
+	h := handlers.New(authSvc, tasksSvc, renderer)
 
 	r := chi.NewRouter()
 	r.Use(middleware.RequestID)
@@ -81,6 +83,11 @@ func main() {
 		pr.Get("/upcoming", h.Upcoming)
 		pr.Get("/anytime", h.Anytime)
 		pr.Get("/logbook", h.Logbook)
+
+		pr.Post("/tasks", h.TaskCreate)
+		pr.Get("/tasks/{id}", h.TaskDetail)
+		pr.Put("/tasks/{id}", h.TaskUpdate)
+		pr.Delete("/tasks/{id}", h.TaskDelete)
 	})
 
 	srv := &http.Server{

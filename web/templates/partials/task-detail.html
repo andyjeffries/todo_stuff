@@ -1,0 +1,51 @@
+{{define "task-detail"}}
+<form id="task-detail-form"
+      hx-put="/tasks/{{.ID}}" hx-trigger="change delay:400ms from:input, change delay:400ms from:textarea"
+      hx-swap="none"
+      class="space-y-5">
+  <div class="flex items-start gap-3">
+    <span class="mt-1 inline-flex h-5 w-5 shrink-0 items-center justify-center rounded-full border-2 {{if .CompletedAt.Valid}}border-amber-400 bg-amber-400{{else}}border-stone-300{{end}}"></span>
+    <input type="text" name="title" value="{{.Title}}"
+           class="w-full bg-transparent text-base font-medium text-stone-900 focus:outline-none">
+  </div>
+
+  <div>
+    <label class="text-xs uppercase tracking-wider text-stone-500">Notes</label>
+    <textarea name="notes" rows="4" placeholder="Markdown supported in a future milestone…"
+              class="mt-1 w-full rounded-lg border border-stone-200 bg-stone-50 px-3 py-2 text-sm text-stone-700 focus:border-amber-400 focus:outline-none focus:ring-1 focus:ring-amber-200">{{if .Notes.Valid}}{{.Notes.String}}{{end}}</textarea>
+  </div>
+
+  <dl class="space-y-2 text-sm">
+    {{if .DueDate.Valid}}
+    <div class="flex justify-between">
+      <dt class="text-stone-500">Due</dt>
+      <dd class="text-stone-700">{{formatDate .DueDate.Time}}{{if .DueTime.Valid}} · {{formatTime .DueTime.String}}{{end}}</dd>
+    </div>
+    {{end}}
+    <div class="flex justify-between">
+      <dt class="text-stone-500">Created</dt>
+      <dd class="text-stone-700">{{formatDate .CreatedAt}}</dd>
+    </div>
+  </dl>
+
+  <div class="pt-3 border-t border-stone-200 flex items-center justify-between">
+    <label class="inline-flex items-center gap-2 text-sm text-stone-600">
+      {{/* The hidden marker tells the server "the form intends to set is_important";
+           when the checkbox is unchecked the browser omits it, but the marker
+           still arrives, so the handler can persist false. */}}
+      <input type="hidden" name="is_important_present" value="1">
+      <input type="checkbox" name="is_important" value="1" {{if .IsImportant}}checked{{end}}
+             class="h-4 w-4 rounded border-stone-300 text-amber-400 focus:ring-amber-300">
+      Important
+    </label>
+    <button type="button"
+            hx-delete="/tasks/{{.ID}}"
+            hx-target="#task-{{.ID}}" hx-swap="outerHTML"
+            hx-confirm="Delete this task?"
+            onclick="window.TodoStuff && window.TodoStuff.closeDetail()"
+            class="text-xs text-rose-500 hover:text-rose-700">
+      Delete
+    </button>
+  </div>
+</form>
+{{end}}

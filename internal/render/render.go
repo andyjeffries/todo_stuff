@@ -14,6 +14,7 @@ import (
 	"net/http"
 	"path"
 	"strings"
+	"time"
 )
 
 type Renderer struct {
@@ -73,4 +74,17 @@ func (r *Renderer) Render(w http.ResponseWriter, status int, page, layout string
 
 var funcMap = template.FuncMap{
 	"safeHTML": func(s string) template.HTML { return template.HTML(s) },
+	"formatDate": func(t time.Time) string {
+		return t.Format("Mon, 2 Jan 2006")
+	},
+	"formatTime": func(s string) string {
+		// Accept "HH:MM" or "HH:MM:SS"; render as "3:04 PM".
+		layouts := []string{"15:04:05", "15:04"}
+		for _, layout := range layouts {
+			if parsed, err := time.Parse(layout, s); err == nil {
+				return parsed.Format("3:04 PM")
+			}
+		}
+		return s
+	},
 }

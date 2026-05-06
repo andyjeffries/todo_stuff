@@ -39,46 +39,11 @@
       </button>
     </header>
     <div id="detail-panel-body" class="flex-1 overflow-y-auto p-5">
-      {{/* TEMP: M5 dummy content so the slide-over has something to show. */}}
-      <div class="space-y-5">
-        <div class="flex items-start gap-3">
-          <span class="mt-0.5 inline-flex h-5 w-5 shrink-0 items-center justify-center rounded-full border-2 border-stone-300"></span>
-          <div class="flex-1">
-            <input type="text" value="Draft Q3 planning doc"
-                   class="w-full bg-transparent text-base font-medium text-stone-900 focus:outline-none"
-                   readonly>
-            <div class="mt-1 flex items-center gap-2 text-xs text-stone-500">
-              {{template "icon-star-solid" "h-3.5 w-3.5 text-amber-500"}}
-              <span>Today · Work</span>
-            </div>
-          </div>
-        </div>
-
-        <div class="rounded-lg border border-stone-200 bg-stone-50 p-3 text-sm text-stone-700">
-          <p class="font-medium text-stone-900">Notes</p>
-          <p class="mt-1 leading-relaxed">Pull together objectives, headcount asks, and risks. Share the rough draft with the team before EOD Thursday for feedback.</p>
-        </div>
-
-        <dl class="space-y-3 text-sm">
-          <div class="flex justify-between">
-            <dt class="text-stone-500">Due</dt>
-            <dd class="text-stone-700">Today, 5:00 PM</dd>
-          </div>
-          <div class="flex justify-between">
-            <dt class="text-stone-500">Project</dt>
-            <dd class="text-stone-700">Work</dd>
-          </div>
-          <div class="flex justify-between">
-            <dt class="text-stone-500">Reminder</dt>
-            <dd class="text-stone-700">30 min before</dd>
-          </div>
-        </dl>
-
-        <p class="text-xs text-stone-400">Dummy content — real task editing lands in Milestone 6.</p>
-      </div>
+      <p class="text-sm text-stone-400">Select a task to see its details.</p>
     </div>
   </aside>
 
+  <script src="/static/js/htmx.min.js" defer></script>
   <script src="/static/js/app.js" defer></script>
 </body>
 </html>

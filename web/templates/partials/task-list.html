@@ -1,0 +1,5 @@
+{{define "task-list"}}
+<ul id="task-list" class="-mx-3 divide-y divide-stone-100">
+  {{range .Tasks}}{{template "task-row" .}}{{end}}
+</ul>
+{{end}}

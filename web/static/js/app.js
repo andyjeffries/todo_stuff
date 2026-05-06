@@ -42,3 +42,16 @@
   window.TodoStuff.openDetail = open;
   window.TodoStuff.closeDetail = close;
 })();
+
+// Toggle the Today empty-state when the list gains/loses children via HTMX.
+(function () {
+  function syncEmpty() {
+    const list = document.getElementById('task-list');
+    const empty = document.getElementById('task-empty');
+    if (!list || !empty) return;
+    empty.hidden = list.children.length > 0;
+  }
+  document.addEventListener('htmx:afterSwap', syncEmpty);
+  document.addEventListener('htmx:load', syncEmpty);
+})();
+
