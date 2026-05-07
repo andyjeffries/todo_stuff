@@ -50,6 +50,21 @@
 {{- else if eq $n "phone"     }}{{template "icon-phone" $cls}}
 {{- else if eq $n "rocket"    }}{{template "icon-rocket" $cls}}
 {{- else if eq $n "users"     }}{{template "icon-users" $cls}}
+{{- else if eq $n "car"               }}{{template "icon-car" $cls}}
+{{- else if eq $n "truck"             }}{{template "icon-truck" $cls}}
+{{- else if eq $n "paper-airplane"    }}{{template "icon-paper-airplane" $cls}}
+{{- else if eq $n "bowl-food"         }}{{template "icon-bowl-food" $cls}}
+{{- else if eq $n "mug"               }}{{template "icon-mug" $cls}}
+{{- else if eq $n "paw"               }}{{template "icon-paw" $cls}}
+{{- else if eq $n "leaf"              }}{{template "icon-leaf" $cls}}
+{{- else if eq $n "dumbbell"          }}{{template "icon-dumbbell" $cls}}
+{{- else if eq $n "medical"           }}{{template "icon-medical" $cls}}
+{{- else if eq $n "tv"                }}{{template "icon-tv" $cls}}
+{{- else if eq $n "puzzle-piece"      }}{{template "icon-puzzle-piece" $cls}}
+{{- else if eq $n "wrench-screwdriver"}}{{template "icon-wrench-screwdriver" $cls}}
+{{- else if eq $n "computer-desktop"  }}{{template "icon-computer-desktop" $cls}}
+{{- else if eq $n "shield-check"      }}{{template "icon-shield-check" $cls}}
+{{- else if eq $n "sun"               }}{{template "icon-sun" $cls}}
 {{- else                      }}{{template "icon-folder" $cls}}
 {{- end -}}
 {{end}}
@@ -95,6 +110,23 @@
   {{template "project-icon-button" (dict "ID" "cake"          "Selected" $selected)}}
   {{template "project-icon-button" (dict "ID" "key"           "Selected" $selected)}}
   {{template "project-icon-button" (dict "ID" "cog"           "Selected" $selected)}}
+  {{/* M19 additions — vehicles, travel, food, animals, plants, fitness,
+       health, entertainment, games, tools, tech, security, weather. */}}
+  {{template "project-icon-button" (dict "ID" "car"               "Selected" $selected)}}
+  {{template "project-icon-button" (dict "ID" "truck"             "Selected" $selected)}}
+  {{template "project-icon-button" (dict "ID" "paper-airplane"    "Selected" $selected)}}
+  {{template "project-icon-button" (dict "ID" "bowl-food"         "Selected" $selected)}}
+  {{template "project-icon-button" (dict "ID" "mug"               "Selected" $selected)}}
+  {{template "project-icon-button" (dict "ID" "paw"               "Selected" $selected)}}
+  {{template "project-icon-button" (dict "ID" "leaf"              "Selected" $selected)}}
+  {{template "project-icon-button" (dict "ID" "dumbbell"          "Selected" $selected)}}
+  {{template "project-icon-button" (dict "ID" "medical"           "Selected" $selected)}}
+  {{template "project-icon-button" (dict "ID" "tv"                "Selected" $selected)}}
+  {{template "project-icon-button" (dict "ID" "puzzle-piece"      "Selected" $selected)}}
+  {{template "project-icon-button" (dict "ID" "wrench-screwdriver" "Selected" $selected)}}
+  {{template "project-icon-button" (dict "ID" "computer-desktop"  "Selected" $selected)}}
+  {{template "project-icon-button" (dict "ID" "shield-check"      "Selected" $selected)}}
+  {{template "project-icon-button" (dict "ID" "sun"               "Selected" $selected)}}
 </div>
 {{end}}
 
