@@ -3,6 +3,17 @@
 @source "../../templates/**/*.html";
 @source "../js/**/*.js";
 
+/* Brand accent tokens — used sparingly on top of the existing stone/amber
+   chrome so the UI keeps its clean white feel. See brand/BRAND.md.
+   - ring-brand: sage ring on the task checkbox (both states).
+   - tick: deep forest "done" mark inside the checkbox.
+   - rust: warm overdue colour from the same paper family. */
+@theme {
+  --color-ring-brand: #9bbca5;
+  --color-tick:       #2f5e3c;
+  --color-rust:       #a85432;
+}
+
 /* HTMX leaves htmx-swapping on an element for the configured swap delay before
    deleting it. Used by task-row complete/uncomplete to fade out instead of
    blinking out. Tied to the 300ms in `hx-swap="delete swap:300ms"`. */

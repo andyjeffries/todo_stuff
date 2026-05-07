@@ -1,4 +1,4 @@
-.PHONY: build run dev tidy clean css css-watch test help
+.PHONY: build run dev tidy clean css css-watch test screenshots help
 
 # Auto-load .env (gitignored). Same KEY=value syntax as docker-compose's
 # env_file. Plain values only — no `export`, no shell interpolation. Lets
@@ -21,6 +21,7 @@ help:
 	@echo "  css-watch  - Build Tailwind CSS in watch mode"
 	@echo "  tidy       - go mod tidy"
 	@echo "  test       - go test ./..."
+	@echo "  screenshots- Regenerate docs/screenshots/ from a seeded instance"
 	@echo "  clean      - Remove build artefacts"
 
 build: css
@@ -46,6 +47,9 @@ tidy:
 
 test:
 	go test ./...
+
+screenshots:
+	./scripts/screenshots.sh
 
 clean:
 	rm -rf bin web/static/css/app.css

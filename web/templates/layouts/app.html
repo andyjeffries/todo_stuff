@@ -4,6 +4,16 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <title>{{.Title}} · TodoStuff</title>
+  <link rel="icon" href="/static/favicon.ico" sizes="any">
+  <link rel="icon" type="image/svg+xml" href="/static/brand/todostuff-icon.svg">
+  <link rel="apple-touch-icon" href="/static/brand/apple-touch-icon.png">
+  <link rel="manifest" href="/static/manifest.webmanifest">
+  <meta name="theme-color" content="#efe9de">
+  <meta property="og:title" content="TodoStuff">
+  <meta property="og:description" content="A calm, self-hosted Go to-do app with SQLite storage.">
+  <meta property="og:image" content="/static/brand/todostuff-social-1200x630.png">
+  <meta property="og:type" content="website">
+  <meta name="twitter:card" content="summary_large_image">
   <link rel="stylesheet" href="/static/css/app.css">
 </head>
 <body data-app-shell class="h-full bg-stone-50 text-stone-900 antialiased">
@@ -22,7 +32,7 @@
                 class="inline-flex h-10 w-10 items-center justify-center rounded-md text-stone-700 hover:bg-stone-100">
           <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.75" stroke="currentColor" class="h-5 w-5"><path stroke-linecap="round" stroke-linejoin="round" d="M3.75 6.75h16.5M3.75 12h16.5m-16.5 5.25h16.5"/></svg>
         </button>
-        <div class="inline-flex h-7 w-7 items-center justify-center rounded-md bg-amber-400 text-stone-900 text-sm font-semibold shadow-sm">T</div>
+        <img src="/static/brand/todostuff-icon-128.png" alt="" width="28" height="28" class="h-7 w-7 rounded-md shadow-sm">
         <span class="font-semibold tracking-tight">TodoStuff</span>
       </header>
 

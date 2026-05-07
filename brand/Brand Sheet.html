@@ -1,0 +1,150 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<title>TodoStuff — Brand Sheet</title>
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg-top: #f6f1e6;
+    --bg-bot: #e3dccb;
+    --paper: #efe9de;
+    --card: #fbf6ea;
+    --ink: #1d1d1b;
+    --ink-soft: #3b342a;
+    --muted: #6c6a63;
+    --rule: #c2b9a4;
+    --ring: #9bbca5;
+    --tick: #2f5e3c;
+  }
+  html, body { margin: 0; padding: 0; background: linear-gradient(180deg, var(--bg-top), var(--bg-bot) 60%, var(--paper)); color: var(--ink); font-family: 'Inter', system-ui, sans-serif; }
+  .wrap { max-width: 1100px; margin: 0 auto; padding: 64px 32px 96px; }
+  h1 { font-family: 'Outfit', sans-serif; font-weight: 600; font-size: 56px; letter-spacing: -0.02em; margin: 0 0 8px; }
+  h2 { font-family: 'Outfit', sans-serif; font-weight: 600; font-size: 28px; letter-spacing: -0.01em; margin: 56px 0 16px; }
+  p  { line-height: 1.55; color: var(--ink-soft); max-width: 640px; }
+  .lede { font-size: 18px; color: var(--muted); margin: 0 0 36px; }
+  .lockup { display: inline-flex; align-items: center; gap: 18px; padding: 18px 24px; background: var(--card); border: 1px solid var(--ink-soft); border-radius: 18px; }
+  .lockup img { width: 64px; height: 64px; border-radius: 14px; }
+  .lockup span { font-family: 'Outfit', sans-serif; font-weight: 600; font-size: 36px; letter-spacing: -0.01em; }
+  .grid { display: grid; gap: 16px; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); }
+  .tile { background: var(--card); border: 1px solid rgba(59,52,42,0.12); border-radius: 16px; padding: 18px; display: flex; flex-direction: column; align-items: center; gap: 12px; }
+  .tile img { background: linear-gradient(180deg, var(--bg-top), var(--bg-bot)); border-radius: 6px; }
+  .tile .meta { text-align: center; font-family: 'JetBrains Mono', monospace; font-size: 11px; color: var(--muted); line-height: 1.4; }
+  .tile a { font-family: 'JetBrains Mono', monospace; font-size: 10px; color: var(--tick); text-decoration: none; }
+  .tile a:hover { text-decoration: underline; }
+  .swatches { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 12px; }
+  .sw { display: flex; align-items: center; gap: 12px; padding: 12px; border: 1px solid rgba(59,52,42,0.12); border-radius: 12px; background: var(--card); }
+  .sw .chip { width: 40px; height: 40px; border-radius: 8px; border: 1px solid rgba(0,0,0,0.06); }
+  .sw .lab { display: flex; flex-direction: column; }
+  .sw .lab b { font-weight: 500; font-size: 13px; }
+  .sw .lab code { font-family: 'JetBrains Mono', monospace; font-size: 11px; color: var(--muted); }
+  .fonts { display: grid; gap: 18px; }
+  .font-row { display: grid; grid-template-columns: 140px 1fr; align-items: baseline; gap: 24px; padding: 16px; background: var(--card); border: 1px solid rgba(59,52,42,0.12); border-radius: 12px; }
+  .font-row .name { font-family: 'JetBrains Mono', monospace; font-size: 12px; color: var(--muted); }
+  .font-row .name b { color: var(--ink); }
+  .font-row .demo { font-size: 40px; letter-spacing: -0.01em; }
+  .pill { display: inline-block; font-family: 'JetBrains Mono', monospace; font-size: 11px; color: var(--tick); background: rgba(155,188,165,0.25); padding: 2px 8px; border-radius: 99px; margin-left: 8px; }
+  .download { display: inline-block; margin-top: 32px; padding: 14px 22px; background: var(--ink); color: var(--card); font-family: 'Outfit', sans-serif; font-weight: 600; border-radius: 12px; text-decoration: none; }
+  .download:hover { background: var(--ink-soft); }
+  .row { display: flex; gap: 12px; align-items: center; flex-wrap: wrap; margin-top: 12px; }
+  .row a { font-family: 'JetBrains Mono', monospace; font-size: 12px; color: var(--tick); text-decoration: none; padding: 6px 10px; border: 1px solid rgba(47,94,60,0.25); border-radius: 8px; }
+  .row a:hover { background: rgba(155,188,165,0.18); }
+  .social-preview img { max-width: 100%; border-radius: 12px; border: 1px solid rgba(59,52,42,0.15); }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <div class="lockup">
+    <img src="brand/png/todostuff-icon-128.png" alt="TodoStuff icon" />
+    <span>TodoStuff</span>
+  </div>
+
+  <h1 style="margin-top: 32px">Brand Sheet</h1>
+  <p class="lede">A calm, self-hosted todo manager. Paper-sand background, sage greens, a confident two-tone tick.</p>
+
+  <h2>Wordmark <span class="pill">Outfit · 600</span></h2>
+  <p><b>Outfit</b> for the wordmark; pair with <b>Inter</b> for body UI. Free, weights 100–900.</p>
+
+  <div class="fonts">
+    <div class="font-row">
+      <div class="name"><b>Outfit</b><br/>600 / -0.01em</div>
+      <div class="demo" style="font-family:'Outfit',sans-serif; font-weight:600; letter-spacing:-0.01em;">TodoStuff</div>
+    </div>
+  </div>
+
+  <h2>Logo lockup</h2>
+  <p>Full lockup with the wordmark outlined to paths — no font dependency. Two variants: ink (light backgrounds) and light (dark backgrounds).</p>
+  <div class="grid">
+    <div class="tile" style="grid-column: span 2"><img src="brand/png/todostuff-logo-ink-1024.png" style="max-width:100%; background:linear-gradient(180deg,#f6f1e6,#e3dccb); border-radius:6px" /><div class="meta">Ink — light backgrounds<br/><a href="brand/svg/todostuff-logo-ink.svg">SVG</a> · <a href="brand/png/todostuff-logo-ink-1024.png">PNG</a></div></div>
+    <div class="tile" style="grid-column: span 2; background:#1d1d1b; color:#fbf6ea"><img src="brand/png/todostuff-logo-light-1024.png" style="max-width:100%; border-radius:6px" /><div class="meta" style="color:#c2b9a4">Light — dark backgrounds<br/><a href="brand/svg/todostuff-logo-light.svg" style="color:var(--ring)">SVG</a> · <a href="brand/png/todostuff-logo-light-1024.png" style="color:var(--ring)">PNG</a></div></div>
+  </div>
+
+  <h2>Wordmark — paths</h2>
+  <p>Outlined wordmark (no font dependency). Use these when the live Outfit Google Font isn't loaded.</p>
+  <div class="grid">
+    <div class="tile" style="grid-column: span 2"><img src="brand/svg/todostuff-wordmark-ink.svg" style="max-width:100%" /><div class="meta">Ink<br/><a href="brand/svg/todostuff-wordmark-ink.svg">SVG</a></div></div>
+    <div class="tile" style="grid-column: span 2; background:#1d1d1b"><img src="brand/svg/todostuff-wordmark-light.svg" style="max-width:100%" /><div class="meta" style="color:#c2b9a4">Light<br/><a href="brand/svg/todostuff-wordmark-light.svg" style="color:var(--ring)">SVG</a></div></div>
+  </div>
+
+  <h2>Mark — sizes</h2>
+  <div class="grid">
+    <div class="tile"><img src="brand/png/todostuff-icon-1024.png" width="160" height="160" /><div class="meta">1024 · master<br/><a href="brand/png/todostuff-icon-1024.png">PNG</a></div></div>
+    <div class="tile"><img src="brand/png/todostuff-icon-512.png" width="160" height="160" /><div class="meta">512 · app art<br/><a href="brand/png/todostuff-icon-512.png">PNG</a></div></div>
+    <div class="tile"><img src="brand/png/todostuff-icon-256.png" width="160" height="160" /><div class="meta">256<br/><a href="brand/png/todostuff-icon-256.png">PNG</a></div></div>
+    <div class="tile"><img src="brand/png/todostuff-icon-192.png" width="128" height="128" /><div class="meta">192 · PWA<br/><a href="brand/png/todostuff-icon-192.png">PNG</a></div></div>
+    <div class="tile"><img src="brand/png/todostuff-icon-180.png" width="128" height="128" /><div class="meta">180 · iOS<br/><a href="brand/png/todostuff-icon-180.png">PNG</a></div></div>
+    <div class="tile"><img src="brand/png/todostuff-icon-128.png" width="128" height="128" /><div class="meta">128 · dock<br/><a href="brand/png/todostuff-icon-128.png">PNG</a></div></div>
+    <div class="tile"><img src="brand/png/todostuff-icon-96.png" width="96" height="96" /><div class="meta">96<br/><a href="brand/png/todostuff-icon-96.png">PNG</a></div></div>
+    <div class="tile"><img src="brand/png/todostuff-icon-64.png" width="64" height="64" /><div class="meta">64<br/><a href="brand/png/todostuff-icon-64.png">PNG</a></div></div>
+    <div class="tile"><img src="brand/png/todostuff-icon-48.png" width="48" height="48" /><div class="meta">48<br/><a href="brand/png/todostuff-icon-48.png">PNG</a></div></div>
+    <div class="tile"><img src="brand/png/todostuff-icon-32.png" width="32" height="32" /><div class="meta">32 · favicon<br/><a href="brand/png/todostuff-icon-32.png">PNG</a></div></div>
+    <div class="tile"><img src="brand/png/todostuff-icon-16.png" width="16" height="16" /><div class="meta">16 · favicon<br/><a href="brand/png/todostuff-icon-16.png">PNG</a></div></div>
+  </div>
+
+  <h2>Variants</h2>
+  <div class="grid">
+    <div class="tile" style="background:#fff"><img src="brand/png/todostuff-icon-transparent-256.png" width="160" height="160" /><div class="meta">Transparent<br/><a href="brand/svg/todostuff-icon-transparent.svg">SVG</a> · <a href="brand/png/todostuff-icon-transparent-512.png">PNG</a></div></div>
+    <div class="tile" style="background:#1d1d1b; color:#fbf6ea"><img src="brand/png/todostuff-icon-transparent-256.png" width="160" height="160" /><div class="meta" style="color:#c2b9a4">on dark<br/><a href="brand/png/todostuff-icon-transparent-512.png" style="color:var(--ring)">PNG</a></div></div>
+    <div class="tile"><img src="brand/svg/todostuff-icon-monochrome.svg" width="160" height="160" /><div class="meta">Monochrome<br/><a href="brand/svg/todostuff-icon-monochrome.svg">SVG</a></div></div>
+    <div class="tile"><img src="brand/png/todostuff-icon-maskable-512.png" width="160" height="160" /><div class="meta">Maskable (PWA)<br/><a href="brand/svg/todostuff-icon-maskable.svg">SVG</a> · <a href="brand/png/todostuff-icon-maskable-512.png">PNG</a></div></div>
+  </div>
+
+  <h2>Color tokens</h2>
+  <div class="swatches">
+    <div class="sw"><div class="chip" style="background:#f6f1e6"></div><div class="lab"><b>Paper top</b><code>#f6f1e6</code></div></div>
+    <div class="sw"><div class="chip" style="background:#e3dccb"></div><div class="lab"><b>Paper bottom</b><code>#e3dccb</code></div></div>
+    <div class="sw"><div class="chip" style="background:#fbf6ea"></div><div class="lab"><b>Card front</b><code>#fbf6ea</code></div></div>
+    <div class="sw"><div class="chip" style="background:#e9e1cf"></div><div class="lab"><b>Card mid</b><code>#e9e1cf</code></div></div>
+    <div class="sw"><div class="chip" style="background:#d8cfbe"></div><div class="lab"><b>Card back</b><code>#d8cfbe</code></div></div>
+    <div class="sw"><div class="chip" style="background:#1d1d1b"></div><div class="lab"><b>Ink</b><code>#1d1d1b</code></div></div>
+    <div class="sw"><div class="chip" style="background:#3b342a"></div><div class="lab"><b>Ink soft / border</b><code>#3b342a</code></div></div>
+    <div class="sw"><div class="chip" style="background:#9bbca5"></div><div class="lab"><b>Ring (light sage)</b><code>#9bbca5</code></div></div>
+    <div class="sw"><div class="chip" style="background:#2f5e3c"></div><div class="lab"><b>Tick (deep forest)</b><code>#2f5e3c</code></div></div>
+    <div class="sw"><div class="chip" style="background:#a85432"></div><div class="lab"><b>Overdue (warm rust)</b><code>#a85432</code></div></div>
+  </div>
+
+  <h2>Social card</h2>
+  <div class="social-preview">
+    <img src="brand/png/todostuff-social-1200x630.png" alt="TodoStuff social card" />
+  </div>
+
+  <h2>Downloads</h2>
+  <p>Everything packaged: all SVG, PNG, the favicon.ico, and the BRAND.md.</p>
+  <div class="row">
+    <a href="brand/favicon.ico">favicon.ico</a>
+    <a href="brand/svg/todostuff-icon.svg">master.svg</a>
+    <a href="brand/svg/todostuff-icon-transparent.svg">transparent.svg</a>
+    <a href="brand/svg/todostuff-icon-monochrome.svg">monochrome.svg</a>
+    <a href="brand/svg/todostuff-icon-maskable.svg">maskable.svg</a>
+    <a href="BRAND.md">BRAND.md</a>
+  </div>
+
+  <p style="margin-top: 48px; color: var(--muted); font-size: 13px;">See <a href="BRAND.md" style="color:var(--tick)">BRAND.md</a> for full guidance on applying the system to the app — favicons, manifest, Tailwind tokens, sidebar lockup, empty states, and what not to do.</p>
+
+</div>
+</body>
+</html>

@@ -30,5 +30,8 @@ cookies*.txt
 tasks/
 docs/
 
+# Canonical brand source — runtime subset already lives in web/static/brand/
+brand/
+
 # CI metadata isn't needed inside the image
 .github/

@@ -24,3 +24,6 @@
 
 # Cookies left over from verification scripts
 cookies*.txt
+
+# Playwright + Chromium cache for the screenshot regeneration script
+/scripts/.cache/

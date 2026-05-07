@@ -1,6 +1,12 @@
+<p align="center">
+  <img src="brand/png/todostuff-logo-ink-512.png" alt="TodoStuff" width="320">
+</p>
+
 # TodoStuff
 
 A self-hosted Go to-do app with SQLite storage and a calm, responsive UI. Single binary, no JavaScript build step in the client (just HTMX), and your data stays on your machine.
+
+The brand kit (icons, wordmarks, social card, palette) lives under [`brand/`](brand/) — see [`brand/BRAND.md`](brand/BRAND.md).
 
 ![Today view](docs/screenshots/today.png)
 

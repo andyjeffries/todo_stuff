@@ -4,12 +4,17 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <title>{{.Title}} · TodoStuff</title>
+  <link rel="icon" href="/static/favicon.ico" sizes="any">
+  <link rel="icon" type="image/svg+xml" href="/static/brand/todostuff-icon.svg">
+  <link rel="apple-touch-icon" href="/static/brand/apple-touch-icon.png">
+  <link rel="manifest" href="/static/manifest.webmanifest">
+  <meta name="theme-color" content="#efe9de">
   <link rel="stylesheet" href="/static/css/app.css">
 </head>
 <body class="min-h-screen bg-stone-50 text-stone-900 antialiased flex items-center justify-center px-4">
   <main class="w-full max-w-sm">
     <div class="text-center mb-8">
-      <div class="inline-flex h-10 w-10 items-center justify-center rounded-xl bg-amber-400 text-stone-900 font-semibold text-lg shadow-sm">T</div>
+      <img src="/static/brand/todostuff-icon-128.png" alt="" width="56" height="56" class="mx-auto h-14 w-14 rounded-xl shadow-sm">
       <h1 class="mt-4 text-2xl font-semibold tracking-tight">{{.Title}}</h1>
       {{with .Subtitle}}<p class="mt-1 text-sm text-stone-500">{{.}}</p>{{end}}
     </div>
