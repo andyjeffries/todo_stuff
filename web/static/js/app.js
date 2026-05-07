@@ -599,6 +599,203 @@
   setInterval(poll, POLL_MS);
 })();
 
+// Drag-and-drop for task lists, the sidebar projects list, and cross-list
+// "drop a task on a project to assign it". Uses SortableJS (vendored).
+//
+// Three Sortables coexist:
+//   #task-list        — within-list reorder + draggable out into project rows
+//   #project-list     — within-list reorder of projects only (separate group)
+//   [data-project-drop] — per-project-row drop zones; receive task drops and
+//                         fire the assign API. Nested inside #project-list.
+//
+// `handle: '[data-drag-handle]'` on the reorder lists keeps row clicks
+// (checkbox, title) intact. A failed reorder leaves the list visually
+// correct; we just lose the persisted order — refreshing snaps back.
+(function () {
+  if (typeof Sortable === 'undefined') return;
+
+  // Class option values must be SINGLE class names — SortableJS feeds them to
+  // classList.add(), which throws SyntaxError on space-separated strings and
+  // silently aborts the drag. Style the look via that class in app.css.
+  const COMMON = {
+    handle: '[data-drag-handle]',
+    animation: 150,
+    // delayOnTouchOnly + delay together: long-press to drag on touch devices,
+    // instant on desktop. Without the touch delay, scrolling a list on mobile
+    // can accidentally trigger a drag.
+    delayOnTouchOnly: true,
+    delay: 150,
+    ghostClass: 'sortable-ghost',
+    chosenClass: 'sortable-chosen',
+    dragClass: 'sortable-drag',
+  };
+
+  function postOrder(url, ids) {
+    if (!ids || ids.length < 2) return;
+    const body = new URLSearchParams();
+    ids.forEach(function (id) { body.append('ids', id); });
+    fetch(url, {
+      method: 'POST',
+      credentials: 'same-origin',
+      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+      body: body.toString(),
+    }).catch(function () { /* surface nothing — user already sees the new order */ });
+  }
+
+  // assignTaskToProject moves a task into a project. We use a plain fetch
+  // for the PUT (rather than htmx.ajax) so we can sequence the follow-up
+  // refreshes without depending on htmx's promise semantics. After the PUT
+  // we explicitly refresh:
+  //   1. the source task list — the task may no longer belong to the
+  //      current view (e.g. dragged out of Inbox into a project), and a
+  //      full GET of the page's #task-list is the simplest way to let the
+  //      server's view filter decide what stays.
+  //   2. the detail panel — if it's open against this same task, re-fetch
+  //      so the Project selector + any project-tagged fields update.
+  function assignTaskToProject(taskId, projectId) {
+    const body = new URLSearchParams({ project_id: projectId });
+    fetch('/tasks/' + taskId, {
+      method: 'PUT',
+      credentials: 'same-origin',
+      headers: {
+        'Content-Type': 'application/x-www-form-urlencoded',
+        'HX-Request': 'true',
+        'HX-Current-Url': window.location.href,
+      },
+      body: body.toString(),
+    }).then(function () {
+      if (typeof htmx === 'undefined') return;
+      // Refresh the active task list so the source row reflects the new
+      // assignment (or disappears if it no longer belongs to this view).
+      if (document.getElementById('task-list')) {
+        htmx.ajax('GET', window.location.pathname, {
+          target: '#task-list',
+          swap: 'outerHTML',
+          select: '#task-list',
+        });
+      }
+      // Refresh the detail panel if it's currently showing this task.
+      const form = document.getElementById('task-detail-form');
+      if (form && form.getAttribute('hx-put') === '/tasks/' + taskId) {
+        htmx.ajax('GET', '/tasks/' + taskId, {
+          target: '#detail-panel-body',
+          swap: 'innerHTML',
+        });
+      }
+    }).catch(function () { /* network/server error — leave UI as-is */ });
+  }
+
+  function initTaskList() {
+    const list = document.getElementById('task-list');
+    if (!list || list.dataset.sortableInit === '1') return;
+    list.dataset.sortableInit = '1';
+    Sortable.create(list, Object.assign({}, COMMON, {
+      // Shared group with project drop zones — tasks "clone" out so the
+      // original <li> stays in the source list. The clone goes into the
+      // project row, where onAdd removes it and fires the assign API. Keeping
+      // the original means the server's OOB swap (which targets #task-{id})
+      // can still find that row to update or delete it.
+      group: { name: 'tasks-and-projects', pull: 'clone', put: ['tasks-and-projects'] },
+      onEnd: function (evt) {
+        // Cross-list move: destination's onAdd handles persistence. Skip.
+        if (evt.from !== evt.to) return;
+        const ids = Array.from(list.querySelectorAll('li[id^="task-"]'))
+          .map(function (li) { return li.id.replace(/^task-/, ''); });
+        postOrder('/tasks/reorder', ids);
+      },
+    }));
+  }
+
+  function initProjectList() {
+    const list = document.getElementById('project-list');
+    if (!list || list.dataset.sortableInit === '1') return;
+    list.dataset.sortableInit = '1';
+    Sortable.create(list, Object.assign({}, COMMON, {
+      // Separate group — project rows reorder among themselves only and
+      // never accept task drops at this level (nested drop zones do that).
+      group: 'projects',
+      // Only treat direct-child project rows as draggable items; the nested
+      // drop-zone Sortable's items inside each row should be ignored here.
+      draggable: '[data-project-id]',
+      onEnd: function () {
+        const ids = Array.from(list.querySelectorAll('[data-project-id]'))
+          .map(function (el) { return el.dataset.projectId; });
+        postOrder('/projects/reorder', ids);
+      },
+    }));
+  }
+
+  function initProjectDropZones() {
+    document.querySelectorAll('[data-project-drop]').forEach(function (zone) {
+      if (zone.dataset.sortableInit === '1') return;
+      zone.dataset.sortableInit = '1';
+      Sortable.create(zone, {
+        group: { name: 'tasks-and-projects', pull: false, put: true },
+        // sort:false + draggable selector that matches nothing here keeps the
+        // row's own children (drag handle, link) immobile. The zone only
+        // exists to receive task drops.
+        sort: false,
+        draggable: '.never-match',
+        animation: 0,
+        onAdd: function (evt) {
+          const taskId = (evt.item.id || '').replace(/^task-/, '');
+          const projectId = zone.dataset.projectId;
+          // SortableJS just inserted the dragged li into this row. Yank it —
+          // the assign response will OOB-delete the original row from the
+          // task list when the task no longer belongs to the current view.
+          if (evt.item && evt.item.parentNode) evt.item.parentNode.removeChild(evt.item);
+          if (taskId && projectId) assignTaskToProject(taskId, projectId);
+        },
+      });
+    });
+  }
+
+  function initAll() {
+    initTaskList();
+    initProjectList();
+    initProjectDropZones();
+  }
+
+  initAll();
+  // HTMX swaps replace #task-list and #project-list with fresh DOM, so we
+  // re-bind after every swap. Sortable.create on the same node re-initialises
+  // cleanly; the dataset guard prevents double-init for unrelated swaps.
+  document.body.addEventListener('htmx:afterSwap', function () {
+    const t = document.getElementById('task-list');
+    if (t) delete t.dataset.sortableInit;
+    const p = document.getElementById('project-list');
+    if (p) delete p.dataset.sortableInit;
+    document.querySelectorAll('[data-project-drop]').forEach(function (z) {
+      delete z.dataset.sortableInit;
+    });
+    initAll();
+  });
+})();
+
+// Keyboard shortcuts:
+//   n      — open quick-add modal (skip when typing in an input)
+//   Esc    — handled per-overlay above (detail, sidebar, modal, listbox)
+//   Enter  — native form submit handles "save" in the detail panel and
+//            quick-add; we don't override it.
+(function () {
+  function isTyping(target) {
+    if (!target) return false;
+    const tag = (target.tagName || '').toLowerCase();
+    if (tag === 'input' || tag === 'textarea' || tag === 'select') return true;
+    if (target.isContentEditable) return true;
+    return false;
+  }
+
+  document.addEventListener('keydown', function (e) {
+    if (e.metaKey || e.ctrlKey || e.altKey) return;
+    if (isTyping(e.target)) return;
+    if (e.key !== 'n' && e.key !== 'N') return;
+    if (!window.TodoStuff || !window.TodoStuff.openQuickAdd) return;
+    e.preventDefault();
+    window.TodoStuff.openQuickAdd();
+  });
+})();
+
 // Project icon picker. Click a [data-icon-id] button → write its ID into the
 // sibling hidden <input data-icon-input> and toggle the visual selected state
 // across the picker's buttons. Selected styling lives in classes that mirror

@@ -10,32 +10,26 @@
 {{define "project-list-body"}}
 {{if .Projects}}
   {{range .Projects}}
-  <div class="group/proj relative flex items-center">
+  <div id="project-row-{{.ID}}"
+       data-project-id="{{.ID}}"
+       data-project-drop
+       class="group/proj relative flex items-center">
+    {{/* Drag handle for SortableJS. Hover-only on ≥sm to keep the sidebar
+         tidy; always visible on mobile (no hover, but the user can long-press
+         the row to drag — `delayOnTouchOnly` is set in app.js). */}}
+    <span data-drag-handle
+          aria-label="Drag project to reorder"
+          class="absolute left-0 top-1/2 -translate-y-1/2 inline-flex h-5 w-4 items-center justify-center
+                 text-stone-300 hover:text-stone-500 cursor-grab active:cursor-grabbing">
+      {{template "icon-grip-vertical" "h-3.5 w-3.5"}}
+    </span>
     <a href="/projects/{{.ID}}"
-       class="flex flex-1 items-center gap-2.5 px-3 py-2 sm:py-1.5 rounded-md text-sm min-w-0 {{if eq $.ActiveProjectID .ID}}bg-amber-100 text-amber-900 font-medium{{else}}text-stone-700 hover:bg-stone-200{{end}}">
+       class="flex flex-1 items-center gap-2.5 pl-5 pr-3 py-2 sm:py-1.5 rounded-md text-sm min-w-0 {{if eq $.ActiveProjectID .ID}}bg-amber-100 text-amber-900 font-medium{{else}}text-stone-700 hover:bg-stone-200{{end}}">
       <span class="inline-flex h-4 w-4 shrink-0 items-center justify-center">
         {{template "project-icon" (dict "Name" .Icon.String "Class" "h-4 w-4")}}
       </span>
       <span class="truncate">{{.Name}}</span>
     </a>
-    {{/* Move arrows: hover-revealed, so desktop-only. Mobile users will get
-         drag-to-reorder in M15. */}}
-    <div class="absolute right-1 top-1/2 -translate-y-1/2 hidden sm:flex items-center opacity-0 group-hover/proj:opacity-100 transition-opacity">
-      <button type="button"
-              hx-post="/projects/{{.ID}}/move?dir=up"
-              hx-target="#project-list" hx-swap="outerHTML"
-              aria-label="Move project up"
-              class="p-0.5 rounded text-stone-500 hover:bg-stone-300 hover:text-stone-800">
-        {{template "icon-chevron-up" "h-3 w-3"}}
-      </button>
-      <button type="button"
-              hx-post="/projects/{{.ID}}/move?dir=down"
-              hx-target="#project-list" hx-swap="outerHTML"
-              aria-label="Move project down"
-              class="p-0.5 rounded text-stone-500 hover:bg-stone-300 hover:text-stone-800">
-        {{template "icon-chevron-down" "h-3 w-3"}}
-      </button>
-    </div>
   </div>
   {{end}}
 {{else}}

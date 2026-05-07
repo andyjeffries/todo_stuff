@@ -9,7 +9,7 @@ A self-hosted Go to-do app with SQLite storage and a calm, responsive UI. Single
 What's working today:
 
 - **Smart lists** — Today, Inbox, Upcoming, Anytime, Logbook. Inbox is GTD-strict (no project *and* no due date) so it stays a clean triage queue. Upcoming groups by due date with smart labels ("Tomorrow", "Friday", "22 May").
-- **Projects** with custom Heroicon icons and reorderable up/down arrows. Tasks moved out of a project go to the Inbox.
+- **Projects** with custom Heroicon icons and drag-to-reorder in the sidebar. Tasks moved out of a project go to the Inbox.
 - **Due dates and times** with quick chips ("Today" / "Tomorrow" / "Next week" / "Clear") and overdue/today colour cues on the row.
 - **Important flag** with a star indicator on the row.
 - **Markdown notes** rendered with goldmark (GFM: tables, strikethrough, autolinks). Click-to-edit: rendered preview by default, source-edit textarea on click.
@@ -22,6 +22,8 @@ What's working today:
 - **Multi-user** with first-run admin onboarding (`/setup`), bcrypt password hashing, and HttpOnly + SameSite=Strict session cookies.
 - **Single-binary deployment** — Go binary plus an embedded migrations FS and embedded HTML templates. Just point `DATABASE_PATH` at a writable directory.
 - **Responsive layout** — sidebar collapses to an off-canvas drawer on phones, with a hamburger-toggled top bar; tablet and desktop keep the sidebar in flow. Detail panel is full-screen on phones, modal-width on everything ≥sm. Tap targets bumped on mobile only (no visual change at desktop).
+- **Drag-and-drop reordering** for tasks and projects, powered by [SortableJS](https://github.com/SortableJS/Sortable) (vendored). A subtle grip handle surfaces on row hover (always visible on touch); long-press to start a drag on phones, instant on desktop. The relative order *within* the dragged set persists; tasks elsewhere keep their positions.
+- **Keyboard shortcuts** — `n` opens quick-add from anywhere (skipped while typing in an input), `Enter` saves the focused form, `Esc` closes whatever overlay is open (detail panel, quick-add modal, sidebar drawer, listbox).
 
 ### Detail panel
 
@@ -72,7 +74,6 @@ Completed tasks grouped by completion date. Click the checkmark again to restore
 
 Next up:
 
-- **Drag-and-drop reordering + keyboard shortcuts** — `n` for new task, `Enter` to save, `Esc` to close, drag to reorder.
 - **User management for admins** — list / create / edit / delete users from an `/admin/users` page.
 - **Docker + docker-compose** — multi-stage build, volume-mounted SQLite, `.env.example`.
 - **Final polish** — error pages, loading states, empty states, favicon.
@@ -117,7 +118,7 @@ Then open `http://localhost:8080`. The first request creates the SQLite DB at `.
 - **Storage:** SQLite via [`mattn/go-sqlite3`](https://github.com/mattn/go-sqlite3) (CGO), WAL mode, foreign keys on, embedded migrations.
 - **Auth:** bcrypt (cost 12) + 32-byte session tokens, HttpOnly + SameSite=Strict cookies, 30-day expiry.
 - **Templates:** Go `html/template`, embedded via `embed.FS`. Layouts + partials parsed alongside each page.
-- **Frontend:** Server-rendered HTML + [HTMX 2](https://htmx.org/) (vendored). No framework, no build step on the client.
+- **Frontend:** Server-rendered HTML + [HTMX 2](https://htmx.org/) (vendored), with [SortableJS](https://github.com/SortableJS/Sortable) for drag-and-drop. No framework, no build step on the client.
 - **Styling:** [Tailwind CSS v4](https://tailwindcss.com/), driven by `@tailwindcss/cli`.
 - **Icons:** [Heroicons v2](https://heroicons.com/) inlined as templated SVGs.
 - **Markdown:** [goldmark](https://github.com/yuin/goldmark) with the GFM extension. Rendered HTML is stored alongside the source on save.

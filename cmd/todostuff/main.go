@@ -94,6 +94,7 @@ func main() {
 		pr.Get("/logbook", h.Logbook)
 
 		pr.Post("/tasks", h.TaskCreate)
+		pr.Post("/tasks/reorder", h.TaskReorder)
 		pr.Get("/tasks/{id}", h.TaskDetail)
 		pr.Put("/tasks/{id}", h.TaskUpdate)
 		pr.Delete("/tasks/{id}", h.TaskDelete)
@@ -103,6 +104,7 @@ func main() {
 		pr.Get("/api/reminders/due", h.RemindersDue)
 
 		pr.Post("/projects", h.ProjectCreate)
+		pr.Post("/projects/reorder", h.ProjectReorder)
 		pr.Get("/projects/{id}", h.ProjectView)
 		pr.Put("/projects/{id}", h.ProjectUpdate)
 		pr.Delete("/projects/{id}", h.ProjectDelete)

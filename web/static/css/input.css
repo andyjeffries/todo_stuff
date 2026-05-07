@@ -12,6 +12,28 @@
   transition: opacity 300ms ease, transform 300ms ease;
 }
 
+/* SortableJS drag visuals. SortableJS adds these class names during a drag;
+   class option values are passed straight to classList.add(), which throws on
+   space-separated strings — so each is one class and the styling lives here. */
+.sortable-ghost { opacity: 0.4; }
+.sortable-chosen { background-color: #f5f5f4; } /* stone-100 */
+.sortable-drag {
+  background-color: #ffffff;
+  box-shadow: 0 10px 25px -5px rgba(0,0,0,0.15), 0 8px 10px -6px rgba(0,0,0,0.1);
+  border-radius: 0.5rem;
+}
+
+/* Cross-list drag visuals: when a task is dragged over a project row, the
+   row temporarily contains the inserted <li> (placeholder + ghost). Hide
+   that <li> so the row's flex layout doesn't break, and ring the row in
+   amber to signal it's an active drop target. */
+[data-project-drop] > li { display: none; }
+[data-project-drop]:has(> li) > a {
+  outline: 2px solid #fbbf24; /* amber-400 */
+  outline-offset: -2px;
+  background-color: #fef3c7; /* amber-100 */
+}
+
 /* Rendered markdown preview in the task detail panel. Tailwind's typography
    plugin would do this for us, but we don't want the dep just for one block. */
 .notes-preview > * + * { margin-top: 0.5rem; }

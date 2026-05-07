@@ -220,6 +220,66 @@ func (p *Projects) Move(ctx context.Context, userID, id string, dir MoveDirectio
 	return tx.Commit()
 }
 
+// ----------------------------------------------------------------- Reorder ---
+
+// Reorder rewrites the position column for the given project IDs so they end
+// up in the order the slice presents them. Same strategy as Tasks.Reorder:
+// reuse the existing position values, just permute their assignment.
+func (p *Projects) Reorder(ctx context.Context, userID string, ids []string) error {
+	if len(ids) < 2 {
+		return nil
+	}
+
+	tx, err := p.db.BeginTx(ctx, nil)
+	if err != nil {
+		return fmt.Errorf("begin: %w", err)
+	}
+	defer tx.Rollback()
+
+	type entry struct {
+		id  string
+		pos int64
+	}
+	rows := make([]entry, 0, len(ids))
+	for _, id := range ids {
+		var pos int64
+		err := tx.QueryRowContext(ctx,
+			`SELECT position FROM projects WHERE id = ? AND user_id = ?`, id, userID,
+		).Scan(&pos)
+		if errors.Is(err, sql.ErrNoRows) {
+			continue
+		}
+		if err != nil {
+			return fmt.Errorf("read position for %s: %w", id, err)
+		}
+		rows = append(rows, entry{id: id, pos: pos})
+	}
+	if len(rows) < 2 {
+		return tx.Commit()
+	}
+
+	positions := make([]int64, len(rows))
+	for i, e := range rows {
+		positions[i] = e.pos
+	}
+	for i := 1; i < len(positions); i++ {
+		for j := i; j > 0 && positions[j-1] > positions[j]; j-- {
+			positions[j-1], positions[j] = positions[j], positions[j-1]
+		}
+	}
+
+	now := p.now()
+	for i, e := range rows {
+		if _, err := tx.ExecContext(ctx,
+			`UPDATE projects SET position = ?, updated_at = ? WHERE id = ? AND user_id = ?`,
+			positions[i], now, e.id, userID,
+		); err != nil {
+			return fmt.Errorf("write position for %s: %w", e.id, err)
+		}
+	}
+	return tx.Commit()
+}
+
 // --------------------------------------------------------------- Helpers ---
 
 const projectSelect = `

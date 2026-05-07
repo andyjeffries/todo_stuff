@@ -61,15 +61,32 @@
 {{end}}
 
 
+{{/*
+  drag handle — sits to the left of the checkbox. Hover-revealed on desktop
+  to keep the row clean, always-visible on touch (no hover state). Tagged
+  with `data-drag-handle` so SortableJS only initiates the drag from this
+  element — clicks on the checkbox / title still behave normally.
+*/}}
+{{define "task-drag-handle"}}
+<span data-drag-handle
+      aria-label="Drag to reorder"
+      class="mt-1 inline-flex h-4 w-4 shrink-0 items-center justify-center
+             text-stone-300 hover:text-stone-500 cursor-grab active:cursor-grabbing">
+  {{template "icon-grip-vertical" "h-4 w-4"}}
+</span>
+{{end}}
+
 {{define "task-row"}}
-<li id="task-{{.Task.ID}}" class="group flex items-start gap-3 px-3 py-2 rounded-lg hover:bg-stone-100">
+<li id="task-{{.Task.ID}}" class="group flex items-start gap-2 px-2 py-2 rounded-lg hover:bg-stone-100 select-none">
+  {{template "task-drag-handle" .}}
   {{template "task-row-body" .}}
 </li>
 {{end}}
 
 
 {{define "task-row-oob"}}
-<li id="task-{{.Task.ID}}" hx-swap-oob="outerHTML" class="group flex items-start gap-3 px-3 py-2 rounded-lg hover:bg-stone-100">
+<li id="task-{{.Task.ID}}" hx-swap-oob="outerHTML" class="group flex items-start gap-2 px-2 py-2 rounded-lg hover:bg-stone-100 select-none">
+  {{template "task-drag-handle" .}}
   {{template "task-row-body" .}}
 </li>
 {{end}}

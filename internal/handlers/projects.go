@@ -217,6 +217,30 @@ func (h *Handlers) ProjectMove(w http.ResponseWriter, r *http.Request) {
 	h.renderProjectList(w, r, user.ID)
 }
 
+// ProjectReorder handles POST /projects/reorder. Mirrors TaskReorder: ids
+// arrive as repeated fields (or one comma-joined field) in the order the
+// drag-drop UI dropped them. Returns 204; the client already moved the
+// sidebar DOM optimistically.
+func (h *Handlers) ProjectReorder(w http.ResponseWriter, r *http.Request) {
+	user, _ := auth.UserFromContext(r.Context())
+	if err := r.ParseForm(); err != nil {
+		http.Error(w, "bad request", http.StatusBadRequest)
+		return
+	}
+	ids := r.PostForm["ids"]
+	if len(ids) == 0 {
+		if joined := strings.TrimSpace(r.PostFormValue("ids")); joined != "" {
+			ids = strings.Split(joined, ",")
+		}
+	}
+	if err := h.Projects.Reorder(r.Context(), user.ID, ids); err != nil {
+		slog.Error("reorder projects", "err", err)
+		http.Error(w, "internal error", http.StatusInternalServerError)
+		return
+	}
+	w.WriteHeader(http.StatusNoContent)
+}
+
 // renderProjectList writes the sidebar projects list partial into w.
 func (h *Handlers) renderProjectList(w http.ResponseWriter, r *http.Request, userID string) {
 	projects, err := h.Projects.List(r.Context(), userID)

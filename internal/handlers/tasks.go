@@ -380,6 +380,31 @@ func (h *Handlers) TaskDelete(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusOK)
 }
 
+// TaskReorder handles POST /tasks/reorder. The form posts the new task
+// order as repeated `ids` fields (in the order SortableJS reports after the
+// drop). Returns 204 on success — the client has already moved the DOM
+// nodes optimistically, so there's nothing to render.
+func (h *Handlers) TaskReorder(w http.ResponseWriter, r *http.Request) {
+	user, _ := auth.UserFromContext(r.Context())
+	if err := r.ParseForm(); err != nil {
+		http.Error(w, "bad request", http.StatusBadRequest)
+		return
+	}
+	ids := r.PostForm["ids"]
+	if len(ids) == 0 {
+		// Some clients post comma-joined ids as a single field. Accept both.
+		if joined := strings.TrimSpace(r.PostFormValue("ids")); joined != "" {
+			ids = strings.Split(joined, ",")
+		}
+	}
+	if err := h.Tasks.Reorder(r.Context(), user.ID, ids); err != nil {
+		slog.Error("reorder tasks", "err", err)
+		http.Error(w, "internal error", http.StatusInternalServerError)
+		return
+	}
+	w.WriteHeader(http.StatusNoContent)
+}
+
 // allowedReminderOffsets is the closed set of offset values the dropdown
 // surfaces. Server-side validation rejects anything outside this set so a
 // crafted POST can't store an arbitrary value.

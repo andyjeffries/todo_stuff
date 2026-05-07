@@ -534,6 +534,79 @@ func (t *Tasks) PopDuePushoverReminders(ctx context.Context) ([]DuePushoverRemin
 	return out, nil
 }
 
+// ----------------------------------------------------------------- Reorder ---
+
+// Reorder rewrites the position column for the given task IDs so they end
+// up in the order the slice presents them. We don't pick brand-new positions
+// out of thin air — instead we collect the positions those rows already hold,
+// sort them ascending, and re-assign in the new order. This keeps tasks that
+// weren't part of the drag (different list / different view) anchored at
+// their existing positions: only the relative order *within the dragged set*
+// changes.
+//
+// Any ID not owned by userID is silently dropped from the operation rather
+// than rejected — a stale client sending a now-deleted ID shouldn't tank
+// the whole reorder.
+func (t *Tasks) Reorder(ctx context.Context, userID string, ids []string) error {
+	if len(ids) < 2 {
+		return nil
+	}
+
+	tx, err := t.db.BeginTx(ctx, nil)
+	if err != nil {
+		return fmt.Errorf("begin: %w", err)
+	}
+	defer tx.Rollback()
+
+	// Pull the existing positions for the user-owned subset of ids. We need
+	// to keep the input order, so we look each one up rather than running a
+	// single IN-query.
+	type entry struct {
+		id  string
+		pos int64
+	}
+	rows := make([]entry, 0, len(ids))
+	for _, id := range ids {
+		var pos int64
+		err := tx.QueryRowContext(ctx,
+			`SELECT position FROM tasks WHERE id = ? AND user_id = ?`, id, userID,
+		).Scan(&pos)
+		if errors.Is(err, sql.ErrNoRows) {
+			continue
+		}
+		if err != nil {
+			return fmt.Errorf("read position for %s: %w", id, err)
+		}
+		rows = append(rows, entry{id: id, pos: pos})
+	}
+	if len(rows) < 2 {
+		return tx.Commit()
+	}
+
+	positions := make([]int64, len(rows))
+	for i, e := range rows {
+		positions[i] = e.pos
+	}
+	// Sort ascending so the first entry in the new order takes the smallest
+	// existing position. The actual values don't matter — only their order.
+	for i := 1; i < len(positions); i++ {
+		for j := i; j > 0 && positions[j-1] > positions[j]; j-- {
+			positions[j-1], positions[j] = positions[j], positions[j-1]
+		}
+	}
+
+	now := t.now()
+	for i, e := range rows {
+		if _, err := tx.ExecContext(ctx,
+			`UPDATE tasks SET position = ?, updated_at = ? WHERE id = ? AND user_id = ?`,
+			positions[i], now, e.id, userID,
+		); err != nil {
+			return fmt.Errorf("write position for %s: %w", e.id, err)
+		}
+	}
+	return tx.Commit()
+}
+
 // ----------------------------------------------------------------- Delete ---
 
 func (t *Tasks) Delete(ctx context.Context, userID, id string) error {
