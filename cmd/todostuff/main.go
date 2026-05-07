@@ -29,7 +29,7 @@ func main() {
 	slog.SetDefault(logger)
 
 	dbPath := envOr("DATABASE_PATH", "./data/todostuff.db")
-	port := envOr("PORT", "8080")
+	port := envOr("PORT", "8636")
 	cookieSecure := envBool("COOKIE_SECURE", false)
 	pushoverToken := os.Getenv("PUSHOVER_APP_TOKEN")
 

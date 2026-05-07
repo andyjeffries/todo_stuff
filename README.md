@@ -90,7 +90,9 @@ cd todostuff
 docker compose up -d
 ```
 
-This pulls the prebuilt image from `ghcr.io/andyjeffries/todo_stuff:latest` (no local build needed), mounts a named volume at `/data` for the SQLite file, and exposes the app on `http://localhost:8080`. The first request redirects you to `/setup` to create the admin user. Defaults work for a localhost install; copy `.env.example` to `.env` if you want to set `PUSHOVER_APP_TOKEN`, `TZ`, or `COOKIE_SECURE`. Swap `image:` for `build: .` in `docker-compose.yml` if you'd rather build from source.
+This pulls the prebuilt image from `ghcr.io/andyjeffries/todo_stuff:latest` (no local build needed), mounts a named volume at `/data` for the SQLite file, and exposes the app on `http://localhost:8636`. The first request redirects you to `/setup` to create the admin user. Defaults work for a localhost install; copy `.env.example` to `.env` if you want to set `PUSHOVER_APP_TOKEN`, `TZ`, or `COOKIE_SECURE`. Swap `image:` for `build: .` in `docker-compose.yml` if you'd rather build from source.
+
+> **Why 8636?** That's "TODO" on a T9 phone keypad (T=8, O=6, D=3, O=6). It's IANA-unassigned and doesn't clash with any of the usual self-host suspects (Jellyfin 8096, Home Assistant 8123, Sonarr 8989, Vikunja 3456, Bitwarden 8080…), so it should Just Work alongside whatever else you're running.
 
 ### From source
 
@@ -101,14 +103,14 @@ make css       # builds Tailwind once
 go run ./cmd/todostuff
 ```
 
-Then open `http://localhost:8080`. The first request creates the SQLite DB at `./data/todostuff.db` and redirects you to `/setup` to create the admin user.
+Then open `http://localhost:8636`. The first request creates the SQLite DB at `./data/todostuff.db` and redirects you to `/setup` to create the admin user.
 
 ### Configuration
 
 | Variable | Default | Notes |
 |---|---|---|
 | `DATABASE_PATH` | `./data/todostuff.db` | SQLite file. Parent directory is created on boot. |
-| `PORT` | `8080` | HTTP listen port. |
+| `PORT` | `8636` | HTTP listen port. "TODO" on a T9 keypad — IANA-unassigned and clear of common self-host defaults. |
 | `COOKIE_SECURE` | `false` | Set to `true` behind HTTPS in production. |
 | `TZ` | system default | Timezone for due-date / due-time / reminder calculations. The browser posts `<input type="date">` / `time` values without a timezone; the server interprets them in `TZ`. |
 | `PUSHOVER_APP_TOKEN` | unset | Optional. Application token from your [Pushover](https://pushover.net) account. When set, the server runs a 60-second-tick dispatcher that delivers due reminders to users who've enabled Pushover in `/profile`. Unset = feature disabled, no dispatcher overhead. |
@@ -118,7 +120,7 @@ Then open `http://localhost:8080`. The first request creates the SQLite DB at `.
 | Target | What it does |
 |---|---|
 | `make build` | Build the binary into `./bin/todostuff`. |
-| `make run` | Build then run on `:8080`. |
+| `make run` | Build then run on `:8636`. |
 | `make dev` | Run with verbose logging. |
 | `make css` | One-shot Tailwind v4 build into `web/static/css/app.css`. |
 | `make css-watch` | Watch mode for Tailwind during development. |

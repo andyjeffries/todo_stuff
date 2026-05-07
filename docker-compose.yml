@@ -7,14 +7,14 @@
 # Quick start:
 #   cp .env.example .env       # optional — defaults work for localhost
 #   docker compose up -d
-#   open http://localhost:8080
+#   open http://localhost:8636
 
 services:
   todostuff:
     image: ghcr.io/andyjeffries/todo_stuff:latest
     container_name: todostuff
     ports:
-      - "8080:8080"
+      - "8636:8636"
     volumes:
       - todostuff_data:/data
     environment:
@@ -24,7 +24,7 @@ services:
       TZ: ${TZ:-UTC}
     restart: unless-stopped
     healthcheck:
-      test: ["CMD", "wget", "-qO-", "http://127.0.0.1:8080/health"]
+      test: ["CMD", "wget", "-qO-", "http://127.0.0.1:8636/health"]
       interval: 30s
       timeout: 3s
       retries: 3

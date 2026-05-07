@@ -35,8 +35,8 @@ RUN mkdir -p /data && chown -R app:app /app /data
 USER app
 VOLUME ["/data"]
 ENV DATABASE_PATH=/data/todostuff.db \
-    PORT=8080
-EXPOSE 8080
+    PORT=8636
+EXPOSE 8636
 HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
-  CMD wget -qO- http://127.0.0.1:8080/health >/dev/null 2>&1 || exit 1
+  CMD wget -qO- http://127.0.0.1:8636/health >/dev/null 2>&1 || exit 1
 ENTRYPOINT ["/app/todostuff"]

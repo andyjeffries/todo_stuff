@@ -10,7 +10,7 @@ endif
 
 BINARY := bin/todostuff
 PKG    := ./cmd/todostuff
-PORT   ?= 8080
+PORT   ?= 8636
 
 help:
 	@echo "Targets:"
