@@ -1,5 +1,13 @@
 .PHONY: build run dev tidy clean css css-watch test help
 
+# Auto-load .env (gitignored). Same KEY=value syntax as docker-compose's
+# env_file. Plain values only — no `export`, no shell interpolation. Lets
+# `make dev` / `make run` pick up local-only secrets without hard-coding.
+ifneq (,$(wildcard .env))
+    include .env
+    export
+endif
+
 BINARY := bin/todostuff
 PKG    := ./cmd/todostuff
 PORT   ?= 8080

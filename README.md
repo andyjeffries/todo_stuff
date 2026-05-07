@@ -15,6 +15,8 @@ What's working today:
 - **Markdown notes** rendered with goldmark (GFM: tables, strikethrough, autolinks). Click-to-edit: rendered preview by default, source-edit textarea on click.
 - **Recurring tasks** with two regeneration modes — *fixed schedule* (anchor on the previous due date, e.g. car insurance) and *after completion* (anchor on the completion timestamp, e.g. flu vaccine). On-create instances regenerate the moment the current one is completed.
 - **Reminders** as a curated offset before the task's due datetime (5 / 10 / 15 / 30 minutes, 1 / 2 / 4 / 8 / 12 / 24 hours before, or "at the time"). Browser notifications fire via JS polling against a `/api/reminders/due` endpoint.
+- **Pushover** — paste your Pushover user key under `/profile`, flip the toggle, and reminders ping your phone via [Pushover](https://pushover.net) the moment they're due. A server-side dispatcher delivers each reminder exactly once on its own channel, independent of the browser poller. There's a "Send test notification" button so you can verify the wiring without waiting for a real reminder.
+- **Profile page** at `/profile` — edit your name, configure Pushover, and change your password. Email changes stay an admin operation.
 - **Quick-add modal** reachable from the sidebar `+` button or a floating-action button on every page. "Fire and forget" capture: type a title, hit Enter, see a green check, keep typing.
 - **Slide-over detail panel** — click any task to open it; edit title, project, dates, reminder, recurrence, importance, and notes inline. The list updates as you type.
 - **Multi-user** with first-run admin onboarding (`/setup`), bcrypt password hashing, and HttpOnly + SameSite=Strict session cookies.
@@ -44,6 +46,12 @@ Capture from anywhere — fire-and-forget, no view-context required.
 
 ![Quick-add modal](docs/screenshots/quick-add.png)
 
+### Profile
+
+Configure Pushover and change your password. The "Send test notification" button verifies the wiring without waiting for a real reminder; if the server isn't configured with a `PUSHOVER_APP_TOKEN` you'll see an inline notice on the page.
+
+![Profile](docs/screenshots/profile.png)
+
 ### Logbook
 
 Completed tasks grouped by completion date. Click the checkmark again to restore.
@@ -54,7 +62,6 @@ Completed tasks grouped by completion date. Click the checkmark again to restore
 
 Next up:
 
-- **Pushover integration** — push reminders to mobile so they fire even when the browser tab is closed.
 - **Responsive layout** — tablet two-pane and mobile single-pane with full-screen detail.
 - **Drag-and-drop reordering + keyboard shortcuts** — `n` for new task, `Enter` to save, `Esc` to close, drag to reorder.
 - **User management for admins** — list / create / edit / delete users from an `/admin/users` page.
@@ -82,6 +89,7 @@ Then open `http://localhost:8080`. The first request creates the SQLite DB at `.
 | `PORT` | `8080` | HTTP listen port. |
 | `COOKIE_SECURE` | `false` | Set to `true` behind HTTPS in production. |
 | `TZ` | system default | Timezone for due-date / due-time / reminder calculations. The browser posts `<input type="date">` / `time` values without a timezone; the server interprets them in `TZ`. |
+| `PUSHOVER_APP_TOKEN` | unset | Optional. Application token from your [Pushover](https://pushover.net) account. When set, the server runs a 60-second-tick dispatcher that delivers due reminders to users who've enabled Pushover in `/profile`. Unset = feature disabled, no dispatcher overhead. |
 
 ### Make targets
 
@@ -115,6 +123,7 @@ internal/
   handlers/            HTTP handlers.
   middleware/          RequireAuth, AllowHead.
   models/              Pure structs that mirror DB rows.
+  notifications/       Outbound channels (Pushover today).
   render/              Template loader + funcs.
   services/            Business logic (Tasks, Projects, recurrence, reminders).
 migrations/            Numbered SQL files, applied lexicographically once.

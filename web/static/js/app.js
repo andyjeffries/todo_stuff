@@ -93,6 +93,39 @@
   });
 })();
 
+// Pushover key controls on /profile. The masked at-rest UI hides the saved
+// key behind bullets; Change reveals an editable text input pre-filled with
+// the saved value (so the user can tweak/correct rather than retype), and
+// Remove clears the value and submits the form so the server-side delete
+// path runs.
+(function () {
+  document.addEventListener('click', function (e) {
+    const change = e.target.closest('[data-pushover-change]');
+    if (change) {
+      const saved = document.querySelector('[data-pushover-saved]');
+      const input = document.querySelector('[data-pushover-input]');
+      const hint = document.querySelector('[data-pushover-hint]');
+      if (saved && input) {
+        saved.classList.add('hidden');
+        input.type = 'text';
+        input.focus();
+        input.select();
+        if (hint) hint.classList.remove('hidden');
+      }
+      return;
+    }
+    const remove = e.target.closest('[data-pushover-remove]');
+    if (remove) {
+      const input = document.querySelector('[data-pushover-input]');
+      if (input) {
+        input.value = '';
+        const form = input.closest('form');
+        if (form) form.submit();
+      }
+    }
+  });
+})();
+
 // Quick-add modal. Triggered by any [data-quick-add] button (sidebar `+` and
 // bottom-right FAB). Posts via HTMX with hx-swap="none" — the user accepts a
 // "fire and forget" capture; their current view doesn't auto-update.

@@ -89,6 +89,76 @@ func (s *Service) CreateUser(ctx context.Context, p CreateUserParams) (*models.U
 	return u, nil
 }
 
+// UpdateProfileParams collects the editable profile fields. Email is not
+// here on purpose — changing email is an admin operation in this product
+// and out of scope for /profile.
+type UpdateProfileParams struct {
+	Name            string
+	PushoverUserKey string // empty string = clear the key
+	PushoverEnabled bool
+}
+
+func (s *Service) UpdateProfile(ctx context.Context, userID string, p UpdateProfileParams) error {
+	name := strings.TrimSpace(p.Name)
+	if name == "" {
+		return errors.New("auth: name is required")
+	}
+	key := strings.TrimSpace(p.PushoverUserKey)
+	// An empty key means "no Pushover" — also force enabled=0 so the dispatcher
+	// can rely on `enabled=1 AND key IS NOT NULL` without an extra null check.
+	enabled := p.PushoverEnabled
+	if key == "" {
+		enabled = false
+	}
+
+	var keyArg any
+	if key == "" {
+		keyArg = nil
+	} else {
+		keyArg = key
+	}
+
+	res, err := s.db.ExecContext(ctx, `
+        UPDATE users
+           SET name = ?,
+               pushover_user_key = ?,
+               pushover_enabled = ?,
+               updated_at = ?
+         WHERE id = ?
+    `, name, keyArg, enabled, time.Now().UTC(), userID)
+	if err != nil {
+		return fmt.Errorf("update profile: %w", err)
+	}
+	if n, _ := res.RowsAffected(); n == 0 {
+		return ErrNotFound
+	}
+	return nil
+}
+
+// UpdatePassword verifies the current password and replaces it. Same
+// constant-time-ish bcrypt compare semantics as Authenticate — wrong current
+// password returns ErrInvalidCredentials.
+func (s *Service) UpdatePassword(ctx context.Context, userID, current, next string) error {
+	u, err := s.FindUserByID(ctx, userID)
+	if err != nil {
+		return err
+	}
+	if !CheckPassword(u.PasswordHash, current) {
+		return ErrInvalidCredentials
+	}
+	hash, err := HashPassword(next)
+	if err != nil {
+		return fmt.Errorf("hash password: %w", err)
+	}
+	_, err = s.db.ExecContext(ctx, `
+        UPDATE users SET password_hash = ?, updated_at = ? WHERE id = ?
+    `, hash, time.Now().UTC(), userID)
+	if err != nil {
+		return fmt.Errorf("update password: %w", err)
+	}
+	return nil
+}
+
 func (s *Service) FindUserByEmail(ctx context.Context, email string) (*models.User, error) {
 	email = strings.ToLower(strings.TrimSpace(email))
 	return s.queryUser(ctx, `WHERE email = ?`, email)

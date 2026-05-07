@@ -1,0 +1,160 @@
+{{define "app-content"}}
+<header class="mb-8">
+  <h1 class="flex items-center gap-3 text-3xl font-semibold tracking-tight text-stone-900">
+    {{template "icon-user" "h-7 w-7 text-stone-500"}}
+    Profile
+  </h1>
+  <p class="mt-1 text-sm text-stone-500">Account details and notification preferences.</p>
+</header>
+
+{{$flashThis := .Flash}}
+{{$errThis := .Error}}
+{{$section := .Section}}
+
+<section class="mb-10 rounded-2xl border border-stone-200 bg-white p-6 shadow-sm">
+  <h2 class="text-base font-semibold text-stone-900">Account</h2>
+  <p class="mt-1 text-xs text-stone-500">Your name and Pushover key are saved together.</p>
+
+  {{if and (eq $section "profile") $flashThis}}
+  <div class="mt-4 rounded-md border border-emerald-200 bg-emerald-50 px-3 py-2 text-sm text-emerald-700">{{$flashThis}}</div>
+  {{end}}
+  {{if and (eq $section "profile") $errThis}}
+  <div class="mt-4 rounded-md border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">{{$errThis}}</div>
+  {{end}}
+
+  <form method="POST" action="/profile" class="mt-5 space-y-4">
+
+    <div>
+      <label for="name" class="block text-sm font-medium text-stone-700 mb-1">Name</label>
+      <input id="name" name="name" type="text" required maxlength="80"
+             value="{{.User.Name}}"
+             class="block w-full rounded-lg border border-stone-300 bg-white px-3 py-2 text-sm shadow-sm focus:border-amber-400 focus:outline-none focus:ring-2 focus:ring-amber-200">
+    </div>
+
+    <div>
+      <label for="email" class="block text-sm font-medium text-stone-700 mb-1">Email</label>
+      <input id="email" type="email" disabled
+             value="{{.User.Email}}"
+             class="block w-full rounded-lg border border-stone-200 bg-stone-50 px-3 py-2 text-sm text-stone-500 shadow-sm">
+      <p class="mt-1 text-xs text-stone-500">Email changes are an admin operation.</p>
+    </div>
+
+    <div class="border-t border-stone-100 pt-5">
+      <h3 class="text-sm font-semibold text-stone-900 flex items-center gap-2">
+        {{template "icon-bell" "h-4 w-4 text-amber-500"}}
+        Pushover
+      </h3>
+      <p class="mt-1 text-xs text-stone-500">
+        Get reminders pushed to your phone via
+        <a href="https://pushover.net" target="_blank" rel="noopener" class="underline hover:text-stone-700">Pushover</a>.
+        Paste the user key from your Pushover dashboard.
+      </p>
+
+      {{if not .PushoverServer}}
+      <div class="mt-3 rounded-md border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-800">
+        This server hasn't been configured with a <code class="font-mono">PUSHOVER_APP_TOKEN</code>. You can save your user key, but messages won't send until the admin sets one.
+      </div>
+      {{end}}
+
+      {{if and (eq $section "pushover") $flashThis}}
+      <div class="mt-3 rounded-md border border-emerald-200 bg-emerald-50 px-3 py-2 text-sm text-emerald-700">{{$flashThis}}</div>
+      {{end}}
+      {{if and (eq $section "pushover") $errThis}}
+      <div class="mt-3 rounded-md border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">{{$errThis}}</div>
+      {{end}}
+
+      <div class="mt-4">
+        <label for="pushover_user_key" class="block text-sm font-medium text-stone-700 mb-1">User key</label>
+
+        {{if eq .PushoverDisplayMode "masked"}}
+        {{/* Saved-key state. Masked display + Change/Remove. The hidden
+             input carries the saved key so submitting the form (e.g. just to
+             save the name) doesn't accidentally clear it. */}}
+        <div data-pushover-saved class="flex items-center gap-2">
+          <div class="flex-1 font-mono text-sm rounded-lg border border-stone-200 bg-stone-50 px-3 py-2 text-stone-700">
+            {{maskPushoverKey .User.PushoverUserKey.String}}
+          </div>
+          <button type="button" data-pushover-change
+                  class="rounded-md border border-stone-300 bg-white px-2.5 py-1.5 text-xs font-medium text-stone-700 hover:bg-stone-50">
+            Change
+          </button>
+          <button type="button" data-pushover-remove
+                  class="rounded-md border border-stone-300 bg-white px-2.5 py-1.5 text-xs font-medium text-stone-700 hover:bg-red-50 hover:text-red-700 hover:border-red-300">
+            Remove
+          </button>
+        </div>
+        <input data-pushover-input id="pushover_user_key" name="pushover_user_key"
+               type="hidden" value="{{.User.PushoverUserKey.String}}"
+               autocomplete="off"
+               class="block w-full font-mono rounded-lg border border-stone-300 bg-white px-3 py-2 text-sm shadow-sm focus:border-amber-400 focus:outline-none focus:ring-2 focus:ring-amber-200">
+        <p data-pushover-hint class="mt-1 text-xs text-stone-500 hidden">
+          Saving will replace the stored key.
+        </p>
+        {{else}}
+        <input id="pushover_user_key" name="pushover_user_key" type="text"
+               value="{{.FormPushoverKey}}"
+               placeholder="u…"
+               autocomplete="off"
+               class="block w-full font-mono rounded-lg border border-stone-300 bg-white px-3 py-2 text-sm shadow-sm focus:border-amber-400 focus:outline-none focus:ring-2 focus:ring-amber-200">
+        <p class="mt-1 text-xs text-stone-500">
+          Pushover sends as long as a key is saved. Clear the field and save to disable.
+        </p>
+        {{end}}
+      </div>
+    </div>
+
+    <div class="flex items-center justify-between gap-3 border-t border-stone-100 pt-5">
+      <button type="submit"
+              formaction="/profile/pushover/test"
+              formmethod="POST"
+              class="rounded-lg border border-stone-300 bg-white px-3 py-2 text-sm font-medium text-stone-700 shadow-sm hover:bg-stone-50">
+        Send test notification
+      </button>
+      <button type="submit"
+              class="rounded-lg bg-amber-400 px-4 py-2 text-sm font-semibold text-stone-900 shadow-sm transition hover:bg-amber-300 focus:outline-none focus:ring-2 focus:ring-amber-300">
+        Save changes
+      </button>
+    </div>
+  </form>
+</section>
+
+<section class="mb-10 rounded-2xl border border-stone-200 bg-white p-6 shadow-sm">
+  <h2 class="text-base font-semibold text-stone-900">Change password</h2>
+  <p class="mt-1 text-xs text-stone-500">You'll stay signed in after changing it.</p>
+
+  {{if and (eq $section "password") $flashThis}}
+  <div class="mt-4 rounded-md border border-emerald-200 bg-emerald-50 px-3 py-2 text-sm text-emerald-700">{{$flashThis}}</div>
+  {{end}}
+  {{if and (eq $section "password") $errThis}}
+  <div class="mt-4 rounded-md border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">{{$errThis}}</div>
+  {{end}}
+
+  <form method="POST" action="/profile/password" class="mt-5 space-y-4">
+    <div>
+      <label for="current_password" class="block text-sm font-medium text-stone-700 mb-1">Current password</label>
+      <input id="current_password" name="current_password" type="password" required
+             autocomplete="current-password"
+             class="block w-full rounded-lg border border-stone-300 bg-white px-3 py-2 text-sm shadow-sm focus:border-amber-400 focus:outline-none focus:ring-2 focus:ring-amber-200">
+    </div>
+    <div>
+      <label for="new_password" class="block text-sm font-medium text-stone-700 mb-1">New password</label>
+      <input id="new_password" name="new_password" type="password" required minlength="8"
+             autocomplete="new-password"
+             class="block w-full rounded-lg border border-stone-300 bg-white px-3 py-2 text-sm shadow-sm focus:border-amber-400 focus:outline-none focus:ring-2 focus:ring-amber-200">
+      <p class="mt-1 text-xs text-stone-500">At least 8 characters.</p>
+    </div>
+    <div>
+      <label for="confirm_password" class="block text-sm font-medium text-stone-700 mb-1">Confirm new password</label>
+      <input id="confirm_password" name="confirm_password" type="password" required minlength="8"
+             autocomplete="new-password"
+             class="block w-full rounded-lg border border-stone-300 bg-white px-3 py-2 text-sm shadow-sm focus:border-amber-400 focus:outline-none focus:ring-2 focus:ring-amber-200">
+    </div>
+    <div class="flex justify-end pt-1">
+      <button type="submit"
+              class="rounded-lg bg-amber-400 px-4 py-2 text-sm font-semibold text-stone-900 shadow-sm transition hover:bg-amber-300 focus:outline-none focus:ring-2 focus:ring-amber-300">
+        Update password
+      </button>
+    </div>
+  </form>
+</section>
+{{end}}

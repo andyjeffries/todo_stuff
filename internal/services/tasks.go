@@ -278,7 +278,7 @@ func (t *Tasks) Update(ctx context.Context, userID, id string, p TaskPatch) (*mo
 		if !p.DueDate.Valid {
 			sets = append(sets, "due_time = NULL",
 				"reminder_at = NULL", "reminder_offset_minutes = NULL",
-				"reminder_sent_at = NULL")
+				"reminder_sent_at = NULL", "reminder_pushover_sent_at = NULL")
 		}
 	}
 	if p.DueTime != nil {
@@ -287,13 +287,15 @@ func (t *Tasks) Update(ctx context.Context, userID, id string, p TaskPatch) (*mo
 		// Clearing the time also clears the reminder.
 		if !p.DueTime.Valid {
 			sets = append(sets, "reminder_at = NULL",
-				"reminder_offset_minutes = NULL", "reminder_sent_at = NULL")
+				"reminder_offset_minutes = NULL", "reminder_sent_at = NULL",
+				"reminder_pushover_sent_at = NULL")
 		}
 	}
 	if p.ReminderAt != nil {
-		// Reset the delivered marker when the reminder changes, so a freshly
-		// scheduled (or rescheduled) reminder fires once polling catches up.
-		sets = append(sets, "reminder_at = ?", "reminder_sent_at = NULL")
+		// Reset both delivered markers when the reminder changes, so a freshly
+		// scheduled (or rescheduled) reminder fires fresh on both channels.
+		sets = append(sets, "reminder_at = ?",
+			"reminder_sent_at = NULL", "reminder_pushover_sent_at = NULL")
 		args = append(args, *p.ReminderAt)
 	}
 	if p.ReminderOffsetMinutes != nil {
@@ -434,6 +436,102 @@ func (t *Tasks) PopDueReminders(ctx context.Context, userID string) ([]DueRemind
 		out = append(out, DueReminder{ID: id, Title: title, Notes: notes.String})
 	}
 	return out, rows.Err()
+}
+
+// DuePushoverReminder is what the background dispatcher needs to fire one
+// Pushover message: the task identity for delivery tracking, the title +
+// notes for the message body, and the user's Pushover user key.
+type DuePushoverReminder struct {
+	TaskID          string
+	Title           string
+	Notes           string
+	PushoverUserKey string
+}
+
+// PopDuePushoverReminders atomically claims all due, undelivered reminders
+// belonging to users who have Pushover enabled and a user key set. The
+// `UPDATE … RETURNING` semantics make this race-safe against multiple
+// dispatcher instances or restarts mid-tick: each row's Pushover delivery
+// fires exactly once.
+//
+// We do the user-side filter (`pushover_enabled = 1 AND key is non-null`) in
+// the WHERE clause via a sub-select so an EXPLAIN stays simple. Tasks for
+// users without Pushover configured are left untouched — the JS browser
+// channel still delivers them via reminder_sent_at.
+func (t *Tasks) PopDuePushoverReminders(ctx context.Context) ([]DuePushoverReminder, error) {
+	now := t.now()
+
+	// Two-step: first claim the rows (UPDATE … RETURNING), then JOIN to grab
+	// each owner's pushover_user_key. We can't do this in a single statement
+	// because UPDATE … RETURNING in SQLite doesn't support reading from a
+	// joined table — only the updated row. The two statements together still
+	// satisfy "claim exactly once" because the UPDATE is the claim point.
+	rows, err := t.db.QueryContext(ctx, `
+        UPDATE tasks
+           SET reminder_pushover_sent_at = ?
+         WHERE reminder_at IS NOT NULL
+           AND reminder_at <= ?
+           AND reminder_pushover_sent_at IS NULL
+           AND completed_at IS NULL
+           AND user_id IN (
+               SELECT id FROM users
+                WHERE pushover_enabled = 1
+                  AND pushover_user_key IS NOT NULL
+                  AND TRIM(pushover_user_key) <> ''
+           )
+        RETURNING id, user_id, title, notes`,
+		now, now,
+	)
+	if err != nil {
+		return nil, fmt.Errorf("pop due pushover reminders: %w", err)
+	}
+	defer rows.Close()
+
+	type claimed struct {
+		id     string
+		userID string
+		title  string
+		notes  string
+	}
+	var claims []claimed
+	for rows.Next() {
+		var c claimed
+		var notes sql.NullString
+		if err := rows.Scan(&c.id, &c.userID, &c.title, &notes); err != nil {
+			return nil, fmt.Errorf("scan claimed reminder: %w", err)
+		}
+		c.notes = notes.String
+		claims = append(claims, c)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	if len(claims) == 0 {
+		return nil, nil
+	}
+
+	// Resolve each user's pushover_user_key. With small claim sizes (one tick,
+	// one user usually) this is fine as N+1 — the dispatcher already iterates
+	// per-row to send. If it ever gets noisy we can switch to IN(?,?,?…).
+	out := make([]DuePushoverReminder, 0, len(claims))
+	for _, c := range claims {
+		var key sql.NullString
+		err := t.db.QueryRowContext(ctx,
+			`SELECT pushover_user_key FROM users WHERE id = ?`, c.userID,
+		).Scan(&key)
+		if err != nil {
+			// User vanished between claim and lookup — exceptional, skip the row.
+			// (The reminder stays marked delivered; that's fine, the user is gone.)
+			continue
+		}
+		out = append(out, DuePushoverReminder{
+			TaskID:          c.id,
+			Title:           c.title,
+			Notes:           c.notes,
+			PushoverUserKey: key.String,
+		})
+	}
+	return out, nil
 }
 
 // ----------------------------------------------------------------- Delete ---

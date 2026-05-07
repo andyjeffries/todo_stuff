@@ -96,6 +96,15 @@ var funcMap = template.FuncMap{
 		return startOfDay(due).Equal(startOfDay(time.Now()))
 	},
 	"formatDateInput": func(t time.Time) string { return t.Format("2006-01-02") },
+	// maskPushoverKey returns first-4 + middle-bullets + last-4 for at-rest
+	// display of a saved Pushover user key. Pushover keys are 30 alphanumeric
+	// chars; for anything <=8 chars we just bullet the whole thing.
+	"maskPushoverKey": func(s string) string {
+		if len(s) <= 8 {
+			return strings.Repeat("•", len(s))
+		}
+		return s[:4] + strings.Repeat("•", len(s)-8) + s[len(s)-4:]
+	},
 	// dict builds a map[string]any from alternating key/value pairs, so
 	// templates can pass multi-field data when invoking sub-templates.
 	"dict": dictFunc,
