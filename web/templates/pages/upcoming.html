@@ -12,7 +12,7 @@
   {{range .Groups}}
   <section>
     <h2 class="mb-2 text-xs font-semibold uppercase tracking-wider text-stone-500">{{.Label}}</h2>
-    <ul class="-mx-3 divide-y divide-stone-100">
+    <ul data-task-list class="-mx-3 divide-y divide-stone-100">
       {{range .Tasks}}{{template "task-row" (dict "Task" . "HideProject" false)}}{{end}}
     </ul>
   </section>

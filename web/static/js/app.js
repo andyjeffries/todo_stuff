@@ -686,24 +686,33 @@
   }
 
   function initTaskList() {
-    const list = document.getElementById('task-list');
-    if (!list || list.dataset.sortableInit === '1') return;
-    list.dataset.sortableInit = '1';
-    Sortable.create(list, Object.assign({}, COMMON, {
-      // Shared group with project drop zones — tasks "clone" out so the
-      // original <li> stays in the source list. The clone goes into the
-      // project row, where onAdd removes it and fires the assign API. Keeping
-      // the original means the server's OOB swap (which targets #task-{id})
-      // can still find that row to update or delete it.
-      group: { name: 'tasks-and-projects', pull: 'clone', put: ['tasks-and-projects'] },
-      onEnd: function (evt) {
-        // Cross-list move: destination's onAdd handles persistence. Skip.
-        if (evt.from !== evt.to) return;
-        const ids = Array.from(list.querySelectorAll('li[id^="task-"]'))
-          .map(function (li) { return li.id.replace(/^task-/, ''); });
-        postOrder('/tasks/reorder', ids);
-      },
-    }));
+    // Bind Sortable to each [data-task-list] <ul>. Most views have one (the
+    // flat task <ul>); Upcoming has one per day group. Binding to the per-list
+    // <ul> instead of a wrapper <div> keeps draggable items at the row level
+    // — otherwise SortableJS treats whatever direct children the bound element
+    // has as draggable, and on Upcoming that's the per-day <section> blocks
+    // (header + list together), which is not what anyone wants.
+    document.querySelectorAll('[data-task-list]').forEach(function (list) {
+      if (list.dataset.sortableInit === '1') return;
+      list.dataset.sortableInit = '1';
+      Sortable.create(list, Object.assign({}, COMMON, {
+        // pull: 'clone' so the original <li> stays put while the clone goes
+        // into the project drop zone (whose onAdd fires the assign API).
+        // put: false rejects drops from other task lists — relevant on
+        // Upcoming, where dropping a task into a different day's list would
+        // otherwise visually succeed but snap back on refresh (the date
+        // didn't change). Project drop zones have pull:false so they never
+        // push back here; nothing legitimate is lost.
+        group: { name: 'tasks-and-projects', pull: 'clone', put: false },
+        onEnd: function (evt) {
+          // Cross-list move: destination's onAdd handles persistence. Skip.
+          if (evt.from !== evt.to) return;
+          const ids = Array.from(list.querySelectorAll('li[id^="task-"]'))
+            .map(function (li) { return li.id.replace(/^task-/, ''); });
+          postOrder('/tasks/reorder', ids);
+        },
+      }));
+    });
   }
 
   function initProjectList() {
@@ -761,8 +770,9 @@
   // re-bind after every swap. Sortable.create on the same node re-initialises
   // cleanly; the dataset guard prevents double-init for unrelated swaps.
   document.body.addEventListener('htmx:afterSwap', function () {
-    const t = document.getElementById('task-list');
-    if (t) delete t.dataset.sortableInit;
+    document.querySelectorAll('[data-task-list]').forEach(function (l) {
+      delete l.dataset.sortableInit;
+    });
     const p = document.getElementById('project-list');
     if (p) delete p.dataset.sortableInit;
     document.querySelectorAll('[data-project-drop]').forEach(function (z) {

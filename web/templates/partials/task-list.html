@@ -4,7 +4,7 @@
   page's .HideProject flag).
 */}}
 {{define "task-list"}}
-<ul id="task-list" class="-mx-3 divide-y divide-stone-100">
+<ul id="task-list" data-task-list class="-mx-3 divide-y divide-stone-100">
   {{$hide := .HideProject}}
   {{range .Tasks}}{{template "task-row" (dict "Task" . "HideProject" $hide)}}{{end}}
 </ul>
