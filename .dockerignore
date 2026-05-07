@@ -1,0 +1,34 @@
+# VCS
+.git
+.gitignore
+
+# Local build artefacts
+bin/
+todostuff
+node_modules/
+web/static/css/app.css
+
+# Local data — never bake into the image
+data/
+*.db
+*.db-shm
+*.db-wal
+
+# Secrets / env
+.env
+.env.local
+cookies*.txt
+
+# Editor / OS
+.vscode/
+.idea/
+*.swp
+.DS_Store
+
+# Docs / planning that don't affect the build
+00-master-plan.md
+tasks/
+docs/
+
+# CI metadata isn't needed inside the image
+.github/

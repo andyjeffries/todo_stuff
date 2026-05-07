@@ -22,6 +22,7 @@ What's working today:
 - **Multi-user** with first-run admin onboarding (`/setup`), bcrypt password hashing, and HttpOnly + SameSite=Strict session cookies.
 - **User administration** at `/admin/users` for admins — invite teammates, edit name / email / admin flag, reset passwords (revokes their sessions), or delete an account along with all of its data. Self-protection rails: you can't strip your own admin access or delete the only admin.
 - **Single-binary deployment** — Go binary plus an embedded migrations FS and embedded HTML templates. Just point `DATABASE_PATH` at a writable directory.
+- **Docker image** published to GHCR (`ghcr.io/andyjeffries/todo_stuff`) on every push to `master`, with a [`docker-compose.yml`](docker-compose.yml) for one-command self-hosting.
 - **Responsive layout** — sidebar collapses to an off-canvas drawer on phones, with a hamburger-toggled top bar; tablet and desktop keep the sidebar in flow. Detail panel is full-screen on phones, modal-width on everything ≥sm. Tap targets bumped on mobile only (no visual change at desktop).
 - **Drag-and-drop reordering** for tasks and projects, powered by [SortableJS](https://github.com/SortableJS/Sortable) (vendored). A subtle grip handle surfaces on row hover (always visible on touch); long-press to start a drag on phones, instant on desktop. The relative order *within* the dragged set persists; tasks elsewhere keep their positions.
 - **Keyboard shortcuts** — `n` opens quick-add from anywhere (skipped while typing in an input), `Enter` saves the focused form, `Esc` closes whatever overlay is open (detail panel, quick-add modal, sidebar drawer, listbox).
@@ -75,12 +76,23 @@ Completed tasks grouped by completion date. Click the checkmark again to restore
 
 Next up:
 
-- **Docker + docker-compose** — multi-stage build, volume-mounted SQLite, `.env.example`.
 - **Final polish** — error pages, loading states, empty states, favicon.
 
 Further out: subtasks, project areas, tags, search, dark mode, iCal/CalDAV sync, PWA, sharing, attachments, email reminders, webhooks, and a fix for browser notifications on Safari/Chrome localhost (currently flaky).
 
 ## Quick start
+
+### Docker (recommended)
+
+```bash
+git clone <this-repo> todostuff
+cd todostuff
+docker compose up -d
+```
+
+This pulls the prebuilt image from `ghcr.io/andyjeffries/todo_stuff:latest` (no local build needed), mounts a named volume at `/data` for the SQLite file, and exposes the app on `http://localhost:8080`. The first request redirects you to `/setup` to create the admin user. Defaults work for a localhost install; copy `.env.example` to `.env` if you want to set `PUSHOVER_APP_TOKEN`, `TZ`, or `COOKIE_SECURE`. Swap `image:` for `build: .` in `docker-compose.yml` if you'd rather build from source.
+
+### From source
 
 ```bash
 git clone <this-repo> todostuff
