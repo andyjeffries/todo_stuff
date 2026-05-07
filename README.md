@@ -20,6 +20,7 @@ What's working today:
 - **Quick-add modal** reachable from the sidebar `+` button or a floating-action button on every page. "Fire and forget" capture: type a title, hit Enter, see a green check, keep typing.
 - **Slide-over detail panel** — click any task to open it; edit title, project, dates, reminder, recurrence, importance, and notes inline. The list updates as you type.
 - **Multi-user** with first-run admin onboarding (`/setup`), bcrypt password hashing, and HttpOnly + SameSite=Strict session cookies.
+- **User administration** at `/admin/users` for admins — invite teammates, edit name / email / admin flag, reset passwords (revokes their sessions), or delete an account along with all of its data. Self-protection rails: you can't strip your own admin access or delete the only admin.
 - **Single-binary deployment** — Go binary plus an embedded migrations FS and embedded HTML templates. Just point `DATABASE_PATH` at a writable directory.
 - **Responsive layout** — sidebar collapses to an off-canvas drawer on phones, with a hamburger-toggled top bar; tablet and desktop keep the sidebar in flow. Detail panel is full-screen on phones, modal-width on everything ≥sm. Tap targets bumped on mobile only (no visual change at desktop).
 - **Drag-and-drop reordering** for tasks and projects, powered by [SortableJS](https://github.com/SortableJS/Sortable) (vendored). A subtle grip handle surfaces on row hover (always visible on touch); long-press to start a drag on phones, instant on desktop. The relative order *within* the dragged set persists; tasks elsewhere keep their positions.
@@ -74,7 +75,6 @@ Completed tasks grouped by completion date. Click the checkmark again to restore
 
 Next up:
 
-- **User management for admins** — list / create / edit / delete users from an `/admin/users` page.
 - **Docker + docker-compose** — multi-stage build, volume-mounted SQLite, `.env.example`.
 - **Final polish** — error pages, loading states, empty states, favicon.
 
@@ -131,7 +131,7 @@ internal/
   auth/                Sessions, password hashing, request-context helpers.
   database/            Open + Migrate.
   handlers/            HTTP handlers.
-  middleware/          RequireAuth, AllowHead.
+  middleware/          RequireAuth, RequireAdmin, AllowHead.
   models/              Pure structs that mirror DB rows.
   notifications/       Outbound channels (Pushover today).
   render/              Template loader + funcs.

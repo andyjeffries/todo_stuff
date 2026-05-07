@@ -21,9 +21,9 @@ const (
 )
 
 var (
-	ErrNotFound          = errors.New("auth: not found")
+	ErrNotFound           = errors.New("auth: not found")
 	ErrInvalidCredentials = errors.New("auth: invalid credentials")
-	ErrEmailTaken        = errors.New("auth: email already in use")
+	ErrEmailTaken         = errors.New("auth: email already in use")
 )
 
 // Service combines user + session persistence and the cookie wiring used by
@@ -166,6 +166,124 @@ func (s *Service) FindUserByEmail(ctx context.Context, email string) (*models.Us
 
 func (s *Service) FindUserByID(ctx context.Context, id string) (*models.User, error) {
 	return s.queryUser(ctx, `WHERE id = ?`, id)
+}
+
+// ListUsers returns every user in the system, ordered by created_at so the
+// admin user (set up first) sticks to the top. Used by /admin/users.
+func (s *Service) ListUsers(ctx context.Context) ([]*models.User, error) {
+	rows, err := s.db.QueryContext(ctx, `
+        SELECT id, email, password_hash, name, is_admin,
+               pushover_user_key, pushover_enabled, created_at, updated_at
+          FROM users
+         ORDER BY created_at ASC, id ASC
+    `)
+	if err != nil {
+		return nil, fmt.Errorf("list users: %w", err)
+	}
+	defer rows.Close()
+
+	var out []*models.User
+	for rows.Next() {
+		var u models.User
+		if err := rows.Scan(&u.ID, &u.Email, &u.PasswordHash, &u.Name, &u.IsAdmin,
+			&u.PushoverUserKey, &u.PushoverEnabled, &u.CreatedAt, &u.UpdatedAt); err != nil {
+			return nil, fmt.Errorf("scan user: %w", err)
+		}
+		out = append(out, &u)
+	}
+	return out, rows.Err()
+}
+
+// UpdateUserParams collects the admin-editable fields. Pushover stays out:
+// admins shouldn't paste a teammate's personal key.
+type UpdateUserParams struct {
+	Email   string
+	Name    string
+	IsAdmin bool
+}
+
+// UpdateUser is the admin counterpart to UpdateProfile: edits name, email,
+// and admin flag for any user. Email collisions surface as ErrEmailTaken so
+// callers can show a targeted message.
+func (s *Service) UpdateUser(ctx context.Context, id string, p UpdateUserParams) error {
+	email := strings.ToLower(strings.TrimSpace(p.Email))
+	name := strings.TrimSpace(p.Name)
+	if email == "" || !strings.Contains(email, "@") {
+		return errors.New("auth: a valid email is required")
+	}
+	if name == "" {
+		return errors.New("auth: name is required")
+	}
+
+	res, err := s.db.ExecContext(ctx, `
+        UPDATE users
+           SET email = ?, name = ?, is_admin = ?, updated_at = ?
+         WHERE id = ?
+    `, email, name, p.IsAdmin, time.Now().UTC(), id)
+	if err != nil {
+		if isUniqueViolation(err) {
+			return ErrEmailTaken
+		}
+		return fmt.Errorf("update user: %w", err)
+	}
+	if n, _ := res.RowsAffected(); n == 0 {
+		return ErrNotFound
+	}
+	return nil
+}
+
+// DeleteUser removes a user and (via ON DELETE CASCADE) all their tasks,
+// projects, recurrence rules, and sessions. Caller is responsible for the
+// "don't delete yourself" guard — this layer trusts the caller.
+func (s *Service) DeleteUser(ctx context.Context, id string) error {
+	res, err := s.db.ExecContext(ctx, `DELETE FROM users WHERE id = ?`, id)
+	if err != nil {
+		return fmt.Errorf("delete user: %w", err)
+	}
+	if n, _ := res.RowsAffected(); n == 0 {
+		return ErrNotFound
+	}
+	return nil
+}
+
+// ResetUserPassword is the admin-side password change. Unlike UpdatePassword
+// it doesn't require the current password — the admin couldn't possibly know
+// it. All existing sessions for that user are invalidated so a stolen-account
+// scenario fully resets.
+func (s *Service) ResetUserPassword(ctx context.Context, id, newPassword string) error {
+	hash, err := HashPassword(newPassword)
+	if err != nil {
+		return fmt.Errorf("hash password: %w", err)
+	}
+	tx, err := s.db.BeginTx(ctx, nil)
+	if err != nil {
+		return fmt.Errorf("begin: %w", err)
+	}
+	defer tx.Rollback()
+
+	res, err := tx.ExecContext(ctx, `
+        UPDATE users SET password_hash = ?, updated_at = ? WHERE id = ?
+    `, hash, time.Now().UTC(), id)
+	if err != nil {
+		return fmt.Errorf("update password: %w", err)
+	}
+	if n, _ := res.RowsAffected(); n == 0 {
+		return ErrNotFound
+	}
+	if _, err := tx.ExecContext(ctx, `DELETE FROM sessions WHERE user_id = ?`, id); err != nil {
+		return fmt.Errorf("revoke sessions: %w", err)
+	}
+	return tx.Commit()
+}
+
+// CountAdmins reports how many users have is_admin=1. Handlers use this to
+// refuse demoting/deleting the last admin.
+func (s *Service) CountAdmins(ctx context.Context) (int, error) {
+	var n int
+	if err := s.db.QueryRowContext(ctx, `SELECT COUNT(*) FROM users WHERE is_admin = 1`).Scan(&n); err != nil {
+		return 0, fmt.Errorf("count admins: %w", err)
+	}
+	return n, nil
 }
 
 func (s *Service) queryUser(ctx context.Context, where string, args ...any) (*models.User, error) {

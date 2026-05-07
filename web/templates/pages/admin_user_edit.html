@@ -1,0 +1,126 @@
+{{define "app-content"}}
+<header class="mb-8">
+  <a href="/admin/users" class="inline-flex items-center gap-1.5 text-sm text-stone-500 hover:text-stone-800 mb-3">
+    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="h-4 w-4"><path stroke-linecap="round" stroke-linejoin="round" d="M10.5 19.5 3 12m0 0 7.5-7.5M3 12h18"/></svg>
+    All users
+  </a>
+  <h1 class="flex items-center gap-3 text-3xl font-semibold tracking-tight text-stone-900">
+    {{template "icon-user" "h-7 w-7 text-stone-500"}}
+    {{.Target.Name}}
+    {{if .IsSelf}}
+    <span class="inline-flex items-center rounded-full bg-stone-100 px-2 py-0.5 text-[10px] font-medium uppercase tracking-wide text-stone-600">You</span>
+    {{end}}
+  </h1>
+  <p class="mt-1 text-sm text-stone-500">{{.Target.Email}}</p>
+</header>
+
+<section class="mb-10 rounded-2xl border border-stone-200 bg-white p-6 shadow-sm">
+  <h2 class="text-base font-semibold text-stone-900">Account</h2>
+  <p class="mt-1 text-xs text-stone-500">Edit name, email and admin access.</p>
+
+  {{if .Form.Flash}}
+  <div class="mt-4 rounded-md border border-emerald-200 bg-emerald-50 px-3 py-2 text-sm text-emerald-700">{{.Form.Flash}}</div>
+  {{end}}
+  {{if .Form.Error}}
+  <div class="mt-4 rounded-md border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">{{.Form.Error}}</div>
+  {{end}}
+
+  {{/* HTML forms can't issue PUT directly. The route is dual-mounted on POST
+       (form path) and PUT (curl/HTMX path) so this plain POST works. */}}
+  <form method="POST" action="/admin/users/{{.Target.ID}}" class="mt-5 space-y-4">
+    <div>
+      <label for="name" class="block text-sm font-medium text-stone-700 mb-1">Name</label>
+      <input id="name" name="name" type="text" required maxlength="80"
+             value="{{.Form.Name}}"
+             class="block w-full rounded-lg border border-stone-300 bg-white px-3 py-2 text-sm shadow-sm focus:border-amber-400 focus:outline-none focus:ring-2 focus:ring-amber-200">
+    </div>
+    <div>
+      <label for="email" class="block text-sm font-medium text-stone-700 mb-1">Email</label>
+      <input id="email" name="email" type="email" required
+             value="{{.Form.Email}}"
+             class="block w-full rounded-lg border border-stone-300 bg-white px-3 py-2 text-sm shadow-sm focus:border-amber-400 focus:outline-none focus:ring-2 focus:ring-amber-200">
+    </div>
+
+    <label class="flex items-start gap-2 text-sm text-stone-700">
+      <input type="checkbox" name="is_admin" value="1" {{if .Form.IsAdmin}}checked{{end}}
+             {{if .IsSelf}}disabled{{end}}
+             class="mt-0.5 h-4 w-4 rounded border-stone-300 text-amber-500 focus:ring-amber-300 disabled:cursor-not-allowed disabled:opacity-50">
+      <span>
+        Admin access
+        {{if .IsSelf}}
+        <span class="block text-xs text-stone-500">You can't change your own admin flag. Ask another admin.</span>
+        {{else if .LastAdmin}}
+        <span class="block text-xs text-stone-500">This is the only admin. Promote someone else first if you want to demote this user.</span>
+        {{end}}
+      </span>
+      {{/* When the checkbox is disabled (editing yourself) the browser
+           omits the field on submit, which would read as is_admin=false in
+           the handler. Carry the current value through so the round-trip is
+           a no-op. */}}
+      {{if .IsSelf}}<input type="hidden" name="is_admin" value="{{if .Form.IsAdmin}}1{{else}}0{{end}}">{{end}}
+    </label>
+
+    <div class="flex justify-end pt-1">
+      <button type="submit"
+              class="rounded-lg bg-amber-400 px-4 py-2 text-sm font-semibold text-stone-900 shadow-sm transition hover:bg-amber-300 focus:outline-none focus:ring-2 focus:ring-amber-300">
+        Save changes
+      </button>
+    </div>
+  </form>
+</section>
+
+<section class="mb-10 rounded-2xl border border-stone-200 bg-white p-6 shadow-sm">
+  <h2 class="text-base font-semibold text-stone-900">Reset password</h2>
+  <p class="mt-1 text-xs text-stone-500">Sets a new password and signs the user out everywhere. Share it securely.</p>
+
+  {{if .PasswordFlash}}
+  <div class="mt-4 rounded-md border border-emerald-200 bg-emerald-50 px-3 py-2 text-sm text-emerald-700">{{.PasswordFlash}}</div>
+  {{end}}
+  {{if .PasswordError}}
+  <div class="mt-4 rounded-md border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">{{.PasswordError}}</div>
+  {{end}}
+
+  <form method="POST" action="/admin/users/{{.Target.ID}}/reset-password" class="mt-5 space-y-4">
+    <div>
+      <label for="reset-new" class="block text-sm font-medium text-stone-700 mb-1">New password</label>
+      <input id="reset-new" name="new_password" type="password" required minlength="8"
+             autocomplete="new-password"
+             class="block w-full rounded-lg border border-stone-300 bg-white px-3 py-2 text-sm shadow-sm focus:border-amber-400 focus:outline-none focus:ring-2 focus:ring-amber-200">
+      <p class="mt-1 text-xs text-stone-500">At least 8 characters.</p>
+    </div>
+    <div>
+      <label for="reset-confirm" class="block text-sm font-medium text-stone-700 mb-1">Confirm new password</label>
+      <input id="reset-confirm" name="confirm_password" type="password" required minlength="8"
+             autocomplete="new-password"
+             class="block w-full rounded-lg border border-stone-300 bg-white px-3 py-2 text-sm shadow-sm focus:border-amber-400 focus:outline-none focus:ring-2 focus:ring-amber-200">
+    </div>
+    <div class="flex justify-end pt-1">
+      <button type="submit"
+              class="rounded-lg bg-amber-400 px-4 py-2 text-sm font-semibold text-stone-900 shadow-sm transition hover:bg-amber-300 focus:outline-none focus:ring-2 focus:ring-amber-300">
+        Reset password
+      </button>
+    </div>
+  </form>
+</section>
+
+{{if not .IsSelf}}
+<section class="mb-10 rounded-2xl border border-red-200 bg-red-50/40 p-6">
+  <h2 class="text-base font-semibold text-red-800">Delete user</h2>
+  <p class="mt-1 text-xs text-red-700">Permanently removes the account and every task, project, recurrence rule, and session it owns.</p>
+
+  {{/* Plain button driven by HTMX. No <form> fallback so a JS-disabled
+       client can't accidentally POST and hit the update route. */}}
+  <button type="button"
+          {{if .LastAdmin}}disabled
+          class="mt-4 cursor-not-allowed rounded-lg border border-red-200 bg-white px-3 py-2 text-sm font-medium text-red-300"
+          title="Can't delete the only admin"
+          {{else}}
+          hx-delete="/admin/users/{{.Target.ID}}"
+          hx-confirm="Delete {{.Target.Name}}? This wipes their tasks, projects and reminders."
+          class="mt-4 rounded-lg border border-red-300 bg-white px-3 py-2 text-sm font-medium text-red-700 hover:bg-red-50"
+          {{end}}>
+    Delete user
+  </button>
+</section>
+{{end}}
+{{end}}

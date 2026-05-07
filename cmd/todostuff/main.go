@@ -118,6 +118,19 @@ func main() {
 		pr.Post("/profile", h.ProfileUpdate)
 		pr.Post("/profile/password", h.ProfilePassword)
 		pr.Post("/profile/pushover/test", h.ProfilePushoverTest)
+
+		// Admin (gated by RequireAdmin on top of RequireAuth). Same PUT/POST
+		// dual-mount trick as /profile so curl + browser forms both work.
+		pr.Group(func(ar chi.Router) {
+			ar.Use(appmw.RequireAdmin)
+			ar.Get("/admin/users", h.AdminUsersPage)
+			ar.Post("/admin/users", h.AdminUserCreate)
+			ar.Get("/admin/users/{id}", h.AdminUserEditPage)
+			ar.Put("/admin/users/{id}", h.AdminUserUpdate)
+			ar.Post("/admin/users/{id}", h.AdminUserUpdate)
+			ar.Delete("/admin/users/{id}", h.AdminUserDelete)
+			ar.Post("/admin/users/{id}/reset-password", h.AdminUserResetPassword)
+		})
 	})
 
 	srv := &http.Server{
