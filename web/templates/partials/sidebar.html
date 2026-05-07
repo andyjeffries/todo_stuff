@@ -1,11 +1,31 @@
 {{define "sidebar"}}
-<aside class="w-60 shrink-0 border-r border-stone-200 bg-stone-100 flex flex-col">
+{{/* Sidebar layout strategy:
+       - Mobile (<sm, <640px): off-canvas drawer. `fixed inset-y-0 left-0`,
+         `-translate-x-full` by default; JS adds `translate-x-0` to slide it
+         in. Backdrop element in app.html dims the page behind it.
+       - Desktop (≥sm): in-flow column via `sm:relative sm:translate-x-0` +
+         `sm:flex` (overrides the fixed/transform layout). Same width.
+     The sidebar always renders the same DOM; only its containing layout
+     classes change between breakpoints. */}}
+<aside id="sidebar"
+       aria-hidden="true"
+       class="fixed inset-y-0 left-0 z-40 w-60 -translate-x-full transition-transform duration-200 ease-out
+              border-r border-stone-200 bg-stone-100 flex flex-col
+              sm:relative sm:translate-x-0 sm:transition-none sm:shrink-0 sm:z-auto">
   <div class="px-5 py-4 flex items-center gap-2">
     <div class="inline-flex h-8 w-8 items-center justify-center rounded-lg bg-amber-400 text-stone-900 font-semibold shadow-sm">T</div>
     <span class="font-semibold tracking-tight">TodoStuff</span>
+    {{/* Mobile-only close button. The FAB plus the sidebar's own
+         per-list nav handle "add task" on small screens, so we hide the
+         sidebar's quick-add affordance on mobile to avoid duplication. */}}
+    <button type="button" data-sidebar-close
+            aria-label="Close menu"
+            class="ml-auto inline-flex h-9 w-9 items-center justify-center rounded-md text-stone-500 hover:bg-stone-200 hover:text-stone-900 sm:hidden">
+      <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="h-5 w-5"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18 18 6M6 6l12 12"/></svg>
+    </button>
     <button type="button" data-quick-add
             aria-label="Quick add task"
-            class="ml-auto inline-flex h-7 w-7 items-center justify-center rounded-md text-stone-500 hover:bg-stone-200 hover:text-stone-900">
+            class="ml-auto hidden h-7 w-7 items-center justify-center rounded-md text-stone-500 hover:bg-stone-200 hover:text-stone-900 sm:inline-flex">
       {{template "icon-plus" "h-4 w-4"}}
     </button>
   </div>
@@ -13,27 +33,27 @@
   <nav class="flex-1 overflow-y-auto px-2 pb-4 space-y-0.5">
     <div class="px-3 pt-3 pb-1 text-[11px] uppercase tracking-wider text-stone-500">Lists</div>
 
-    <a href="/today" class="flex items-center gap-2.5 px-3 py-1.5 rounded-md text-sm {{if eq .ActiveView "today"}}bg-amber-100 text-amber-900 font-medium{{else}}text-stone-700 hover:bg-stone-200{{end}}">
+    <a href="/today" class="flex items-center gap-2.5 px-3 py-2 sm:py-1.5 rounded-md text-sm {{if eq .ActiveView "today"}}bg-amber-100 text-amber-900 font-medium{{else}}text-stone-700 hover:bg-stone-200{{end}}">
       {{template "icon-star-solid" "h-4 w-4 shrink-0 text-amber-500"}}
       <span>Today</span>
     </a>
 
-    <a href="/inbox" class="flex items-center gap-2.5 px-3 py-1.5 rounded-md text-sm {{if eq .ActiveView "inbox"}}bg-amber-100 text-amber-900 font-medium{{else}}text-stone-700 hover:bg-stone-200{{end}}">
+    <a href="/inbox" class="flex items-center gap-2.5 px-3 py-2 sm:py-1.5 rounded-md text-sm {{if eq .ActiveView "inbox"}}bg-amber-100 text-amber-900 font-medium{{else}}text-stone-700 hover:bg-stone-200{{end}}">
       {{template "icon-inbox" "h-4 w-4 shrink-0 text-stone-500"}}
       <span>Inbox</span>
     </a>
 
-    <a href="/upcoming" class="flex items-center gap-2.5 px-3 py-1.5 rounded-md text-sm {{if eq .ActiveView "upcoming"}}bg-amber-100 text-amber-900 font-medium{{else}}text-stone-700 hover:bg-stone-200{{end}}">
+    <a href="/upcoming" class="flex items-center gap-2.5 px-3 py-2 sm:py-1.5 rounded-md text-sm {{if eq .ActiveView "upcoming"}}bg-amber-100 text-amber-900 font-medium{{else}}text-stone-700 hover:bg-stone-200{{end}}">
       {{template "icon-calendar" "h-4 w-4 shrink-0 text-rose-400"}}
       <span>Upcoming</span>
     </a>
 
-    <a href="/anytime" class="flex items-center gap-2.5 px-3 py-1.5 rounded-md text-sm {{if eq .ActiveView "anytime"}}bg-amber-100 text-amber-900 font-medium{{else}}text-stone-700 hover:bg-stone-200{{end}}">
+    <a href="/anytime" class="flex items-center gap-2.5 px-3 py-2 sm:py-1.5 rounded-md text-sm {{if eq .ActiveView "anytime"}}bg-amber-100 text-amber-900 font-medium{{else}}text-stone-700 hover:bg-stone-200{{end}}">
       {{template "icon-stack" "h-4 w-4 shrink-0 text-emerald-500"}}
       <span>Anytime</span>
     </a>
 
-    <a href="/logbook" class="flex items-center gap-2.5 px-3 py-1.5 rounded-md text-sm {{if eq .ActiveView "logbook"}}bg-amber-100 text-amber-900 font-medium{{else}}text-stone-700 hover:bg-stone-200{{end}}">
+    <a href="/logbook" class="flex items-center gap-2.5 px-3 py-2 sm:py-1.5 rounded-md text-sm {{if eq .ActiveView "logbook"}}bg-amber-100 text-amber-900 font-medium{{else}}text-stone-700 hover:bg-stone-200{{end}}">
       {{template "icon-archive" "h-4 w-4 shrink-0 text-stone-500"}}
       <span>Logbook</span>
     </a>

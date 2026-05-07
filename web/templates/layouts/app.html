@@ -11,13 +11,34 @@
     {{template "sidebar" .}}
 
     <main class="flex-1 flex flex-col min-w-0 overflow-hidden">
+      {{/* Mobile-only top bar. The sidebar is off-canvas on small screens,
+           so we surface a hamburger + the wordmark here so the user can
+           always orient and reach navigation. Hidden on sm and up where the
+           sidebar is in-flow. */}}
+      <header class="flex items-center gap-3 border-b border-stone-200 bg-white px-3 py-2 sm:hidden">
+        <button type="button" data-sidebar-open
+                aria-label="Open menu"
+                aria-controls="sidebar"
+                class="inline-flex h-10 w-10 items-center justify-center rounded-md text-stone-700 hover:bg-stone-100">
+          <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.75" stroke="currentColor" class="h-5 w-5"><path stroke-linecap="round" stroke-linejoin="round" d="M3.75 6.75h16.5M3.75 12h16.5m-16.5 5.25h16.5"/></svg>
+        </button>
+        <div class="inline-flex h-7 w-7 items-center justify-center rounded-md bg-amber-400 text-stone-900 text-sm font-semibold shadow-sm">T</div>
+        <span class="font-semibold tracking-tight">TodoStuff</span>
+      </header>
+
       <div class="flex-1 overflow-y-auto">
-        <div class="mx-auto w-full max-w-2xl px-6 sm:px-8 py-10">
+        <div class="mx-auto w-full max-w-2xl px-4 sm:px-8 py-6 sm:py-10">
           {{template "app-content" .}}
         </div>
       </div>
     </main>
   </div>
+
+  {{/* Sidebar backdrop. Only meaningful when the mobile sidebar is open;
+       sm:hidden keeps it out of the desktop layout entirely. */}}
+  <div id="sidebar-backdrop"
+       class="fixed inset-0 z-30 bg-stone-900/30 opacity-0 pointer-events-none transition-opacity duration-200 sm:hidden"
+       aria-hidden="true"></div>
 
   {{/* Floating action button — opens the quick-add modal from anywhere. */}}
   <button type="button" data-quick-add
@@ -43,9 +64,9 @@
     <header class="flex items-center justify-between px-5 py-3 border-b border-stone-200">
       <h2 class="text-sm font-medium text-stone-700">Task</h2>
       <button type="button" data-detail-close
-              class="rounded-md p-1 text-stone-400 hover:bg-stone-100 hover:text-stone-700"
+              class="inline-flex h-9 w-9 items-center justify-center rounded-md text-stone-400 hover:bg-stone-100 hover:text-stone-700"
               aria-label="Close task detail">
-        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="h-4 w-4"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18 18 6M6 6l12 12"/></svg>
+        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.75" stroke="currentColor" class="h-5 w-5"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18 18 6M6 6l12 12"/></svg>
       </button>
     </header>
     <div id="detail-panel-body" class="flex-1 overflow-y-auto p-5">

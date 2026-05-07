@@ -93,6 +93,51 @@
   });
 })();
 
+// Mobile sidebar drawer. Off-canvas on <sm; in-flow on ≥sm (Tailwind handles
+// the layout switch via `sm:relative sm:translate-x-0`). This module just
+// adds/removes `translate-x-0` to slide it in, and toggles the backdrop.
+(function () {
+  const sidebar = document.getElementById('sidebar');
+  const backdrop = document.getElementById('sidebar-backdrop');
+  if (!sidebar) return;
+
+  function open() {
+    sidebar.classList.remove('-translate-x-full');
+    sidebar.classList.add('translate-x-0');
+    sidebar.setAttribute('aria-hidden', 'false');
+    if (backdrop) {
+      backdrop.classList.remove('opacity-0', 'pointer-events-none');
+      backdrop.classList.add('opacity-100');
+    }
+  }
+  function close() {
+    sidebar.classList.add('-translate-x-full');
+    sidebar.classList.remove('translate-x-0');
+    sidebar.setAttribute('aria-hidden', 'true');
+    if (backdrop) {
+      backdrop.classList.remove('opacity-100');
+      backdrop.classList.add('opacity-0', 'pointer-events-none');
+    }
+  }
+
+  document.addEventListener('click', function (e) {
+    if (e.target.closest('[data-sidebar-open]')) { open(); return; }
+    if (e.target.closest('[data-sidebar-close]')) { close(); return; }
+  });
+  if (backdrop) backdrop.addEventListener('click', close);
+
+  // Tapping a nav link should auto-close the drawer so the user lands in the
+  // chosen view without an extra dismiss step. Only matters on mobile; on
+  // desktop the sidebar is always visible so the toggle is a no-op.
+  sidebar.querySelectorAll('a[href]').forEach(function (a) {
+    a.addEventListener('click', close);
+  });
+
+  document.addEventListener('keydown', function (e) {
+    if (e.key === 'Escape' && sidebar.getAttribute('aria-hidden') === 'false') close();
+  });
+})();
+
 // Pushover key controls on /profile. The masked at-rest UI hides the saved
 // key behind bullets; Change reveals an editable text input pre-filled with
 // the saved value (so the user can tweak/correct rather than retype), and

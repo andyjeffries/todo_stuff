@@ -21,6 +21,7 @@ What's working today:
 - **Slide-over detail panel** — click any task to open it; edit title, project, dates, reminder, recurrence, importance, and notes inline. The list updates as you type.
 - **Multi-user** with first-run admin onboarding (`/setup`), bcrypt password hashing, and HttpOnly + SameSite=Strict session cookies.
 - **Single-binary deployment** — Go binary plus an embedded migrations FS and embedded HTML templates. Just point `DATABASE_PATH` at a writable directory.
+- **Responsive layout** — sidebar collapses to an off-canvas drawer on phones, with a hamburger-toggled top bar; tablet and desktop keep the sidebar in flow. Detail panel is full-screen on phones, modal-width on everything ≥sm. Tap targets bumped on mobile only (no visual change at desktop).
 
 ### Detail panel
 
@@ -52,6 +53,15 @@ Configure Pushover and change your password. The "Send test notification" button
 
 ![Profile](docs/screenshots/profile.png)
 
+### Mobile
+
+The sidebar slides in from the left when you tap the hamburger; tapping a list link or the backdrop closes it again. The detail panel takes the full screen on phones.
+
+<p>
+  <img src="docs/screenshots/mobile-today.png" width="280" alt="Mobile Today view" />
+  <img src="docs/screenshots/mobile-sidebar.png" width="280" alt="Mobile sidebar drawer" />
+</p>
+
 ### Logbook
 
 Completed tasks grouped by completion date. Click the checkmark again to restore.
@@ -62,7 +72,6 @@ Completed tasks grouped by completion date. Click the checkmark again to restore
 
 Next up:
 
-- **Responsive layout** — tablet two-pane and mobile single-pane with full-screen detail.
 - **Drag-and-drop reordering + keyboard shortcuts** — `n` for new task, `Enter` to save, `Esc` to close, drag to reorder.
 - **User management for admins** — list / create / edit / delete users from an `/admin/users` page.
 - **Docker + docker-compose** — multi-stage build, volume-mounted SQLite, `.env.example`.

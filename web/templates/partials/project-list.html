@@ -12,13 +12,15 @@
   {{range .Projects}}
   <div class="group/proj relative flex items-center">
     <a href="/projects/{{.ID}}"
-       class="flex flex-1 items-center gap-2.5 px-3 py-1.5 rounded-md text-sm min-w-0 {{if eq $.ActiveProjectID .ID}}bg-amber-100 text-amber-900 font-medium{{else}}text-stone-700 hover:bg-stone-200{{end}}">
+       class="flex flex-1 items-center gap-2.5 px-3 py-2 sm:py-1.5 rounded-md text-sm min-w-0 {{if eq $.ActiveProjectID .ID}}bg-amber-100 text-amber-900 font-medium{{else}}text-stone-700 hover:bg-stone-200{{end}}">
       <span class="inline-flex h-4 w-4 shrink-0 items-center justify-center">
         {{template "project-icon" (dict "Name" .Icon.String "Class" "h-4 w-4")}}
       </span>
       <span class="truncate">{{.Name}}</span>
     </a>
-    <div class="absolute right-1 top-1/2 -translate-y-1/2 flex items-center opacity-0 group-hover/proj:opacity-100 transition-opacity">
+    {{/* Move arrows: hover-revealed, so desktop-only. Mobile users will get
+         drag-to-reorder in M15. */}}
+    <div class="absolute right-1 top-1/2 -translate-y-1/2 hidden sm:flex items-center opacity-0 group-hover/proj:opacity-100 transition-opacity">
       <button type="button"
               hx-post="/projects/{{.ID}}/move?dir=up"
               hx-target="#project-list" hx-swap="outerHTML"
