@@ -1,6 +1,6 @@
 # TodoStuff
 
-A self-hosted Go to-do app with SQLite storage and a calm, responsive UI inspired by Things 3. Single binary, no JavaScript build step in the client (just HTMX), and your data stays on your machine.
+A self-hosted Go to-do app with SQLite storage and a calm, responsive UI. Single binary, no JavaScript build step in the client (just HTMX), and your data stays on your machine.
 
 ![Today view](docs/screenshots/today.png)
 
