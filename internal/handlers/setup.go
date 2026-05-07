@@ -74,7 +74,7 @@ func (h *Handlers) SetupSubmit(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	sess, err := h.Auth.CreateSession(r.Context(), user.ID)
+	sess, err := h.Auth.CreateSession(r.Context(), user.ID, false)
 	if err != nil {
 		slog.Error("create session", "err", err)
 		http.Error(w, "internal error", http.StatusInternalServerError)

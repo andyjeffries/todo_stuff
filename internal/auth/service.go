@@ -16,8 +16,9 @@ import (
 )
 
 const (
-	SessionCookieName = "todostuff_session"
-	SessionDuration   = 30 * 24 * time.Hour
+	SessionCookieName  = "todostuff_session"
+	SessionDuration    = 30 * 24 * time.Hour
+	RememberMeDuration = 365 * 24 * time.Hour
 )
 
 var (
@@ -324,16 +325,20 @@ func (s *Service) Authenticate(ctx context.Context, email, password string) (*mo
 
 // -------------------------------------------------------------- Sessions ---
 
-func (s *Service) CreateSession(ctx context.Context, userID string) (*models.Session, error) {
+func (s *Service) CreateSession(ctx context.Context, userID string, remember bool) (*models.Session, error) {
 	tok, err := newSessionToken()
 	if err != nil {
 		return nil, fmt.Errorf("generate token: %w", err)
+	}
+	dur := SessionDuration
+	if remember {
+		dur = RememberMeDuration
 	}
 	now := time.Now().UTC()
 	sess := &models.Session{
 		ID:        tok,
 		UserID:    userID,
-		ExpiresAt: now.Add(SessionDuration),
+		ExpiresAt: now.Add(dur),
 		CreatedAt: now,
 	}
 	_, err = s.db.ExecContext(ctx, `

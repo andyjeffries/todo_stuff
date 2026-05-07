@@ -15,6 +15,7 @@ type loginViewData struct {
 	Theme    string
 	Subtitle string
 	Email    string
+	Remember bool
 	Error    string
 }
 
@@ -37,19 +38,20 @@ func (h *Handlers) LoginSubmit(w http.ResponseWriter, r *http.Request) {
 	}
 	email := strings.TrimSpace(r.PostFormValue("email"))
 	password := r.PostFormValue("password")
+	remember := r.PostFormValue("remember") != ""
 
 	user, err := h.Auth.Authenticate(r.Context(), email, password)
 	if err != nil {
 		if !errors.Is(err, auth.ErrInvalidCredentials) {
 			slog.Error("authenticate", "err", err)
 		}
-		data := loginViewData{Title: "Sign in", Subtitle: "Welcome back.", Email: email,
+		data := loginViewData{Title: "Sign in", Subtitle: "Welcome back.", Email: email, Remember: remember,
 			Error: "Email or password is incorrect.", Theme: appmw.ThemeFromContext(r.Context())}
 		_ = h.Render.Render(w, http.StatusUnauthorized, "login", "auth", data)
 		return
 	}
 
-	sess, err := h.Auth.CreateSession(r.Context(), user.ID)
+	sess, err := h.Auth.CreateSession(r.Context(), user.ID, remember)
 	if err != nil {
 		slog.Error("create session", "err", err)
 		http.Error(w, "internal error", http.StatusInternalServerError)

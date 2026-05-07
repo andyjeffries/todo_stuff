@@ -71,7 +71,7 @@ func (h *Handlers) Today(w http.ResponseWriter, r *http.Request) {
 		Title:      "Today",
 		ActiveView: "today",
 		Heading:    "Today",
-		Subheading: "Tasks due today and anything left undated.",
+		Subheading: "Tasks due today, anything overdue, and anything left undated.",
 		Tasks:      h.listForView(r, services.ViewToday),
 	})
 }
