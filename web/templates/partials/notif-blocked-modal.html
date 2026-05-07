@@ -7,7 +7,7 @@
 
 {{define "notif-blocked-modal"}}
 <div id="notif-blocked-backdrop"
-     class="fixed inset-0 z-50 bg-stone-900/30 opacity-0 pointer-events-none transition-opacity duration-200"
+     class="fixed inset-0 z-50 bg-stone-900/30 dark:bg-black/60 opacity-0 pointer-events-none transition-opacity duration-200"
      aria-hidden="true"></div>
 
 <div id="notif-blocked"
@@ -16,62 +16,62 @@
      aria-labelledby="notif-blocked-title"
      aria-hidden="true"
      class="fixed left-1/2 top-24 z-[60] w-full max-w-lg -translate-x-1/2 scale-95 opacity-0 pointer-events-none transition duration-200">
-  <div class="rounded-2xl bg-white shadow-2xl ring-1 ring-stone-200/70">
+  <div class="rounded-2xl bg-white dark:bg-stone-800 shadow-2xl ring-1 ring-stone-200/70 dark:ring-stone-700/70">
     <div class="flex items-start gap-3 px-6 py-5">
-      <span class="mt-0.5 inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-stone-100">
-        {{template "icon-bell-slash" "h-5 w-5 text-stone-500"}}
+      <span class="mt-0.5 inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-stone-100 dark:bg-stone-700">
+        {{template "icon-bell-slash" "h-5 w-5 text-stone-500 dark:text-stone-400"}}
       </span>
       <div class="min-w-0 flex-1">
-        <h2 id="notif-blocked-title" class="text-base font-semibold text-stone-900">Reminders are blocked</h2>
-        <p class="mt-1 text-sm text-stone-600">
+        <h2 id="notif-blocked-title" class="text-base font-semibold text-stone-900 dark:text-stone-100">Reminders are blocked</h2>
+        <p class="mt-1 text-sm text-stone-600 dark:text-stone-400">
           Your browser previously denied notification permission for this site.
           Browsers won't show the permission prompt again — you'll need to
           re-enable it in your settings, then reload this page.
         </p>
 
-        <div class="mt-4 space-y-3 text-sm text-stone-700">
-          <details open class="rounded-lg border border-stone-200 bg-stone-50 p-3">
-            <summary class="cursor-pointer font-medium text-stone-800">Safari (macOS)</summary>
-            <ol class="mt-2 ml-5 list-decimal space-y-1 text-stone-600">
-              <li>Open <span class="font-medium text-stone-800">Safari → Settings…</span> (⌘ + ,).</li>
-              <li>Click the <span class="font-medium text-stone-800">Websites</span> tab.</li>
-              <li>Select <span class="font-medium text-stone-800">Notifications</span> in the left list.</li>
+        <div class="mt-4 space-y-3 text-sm text-stone-700 dark:text-stone-300">
+          <details open class="rounded-lg border border-stone-200 dark:border-stone-600 bg-stone-50 dark:bg-stone-700 p-3">
+            <summary class="cursor-pointer font-medium text-stone-800 dark:text-stone-200">Safari (macOS)</summary>
+            <ol class="mt-2 ml-5 list-decimal space-y-1 text-stone-600 dark:text-stone-400">
+              <li>Open <span class="font-medium text-stone-800 dark:text-stone-200">Safari → Settings…</span> (⌘ + ,).</li>
+              <li>Click the <span class="font-medium text-stone-800 dark:text-stone-200">Websites</span> tab.</li>
+              <li>Select <span class="font-medium text-stone-800 dark:text-stone-200">Notifications</span> in the left list.</li>
               <li>
-                <span class="font-medium text-stone-800">If this site isn't listed</span>, the
-                checkbox at the bottom — <span class="font-medium text-stone-800">"Allow websites to ask for permission to send notifications"</span> — is unchecked. Tick it, then reload this page and click "Enable reminders" again.
+                <span class="font-medium text-stone-800 dark:text-stone-200">If this site isn't listed</span>, the
+                checkbox at the bottom — <span class="font-medium text-stone-800 dark:text-stone-200">"Allow websites to ask for permission to send notifications"</span> — is unchecked. Tick it, then reload this page and click "Enable reminders" again.
               </li>
-              <li>Otherwise, find this site in the list and change it to <span class="font-medium text-stone-800">Allow</span>, then reload.</li>
+              <li>Otherwise, find this site in the list and change it to <span class="font-medium text-stone-800 dark:text-stone-200">Allow</span>, then reload.</li>
             </ol>
-            <p class="mt-2 text-xs text-stone-500">
+            <p class="mt-2 text-xs text-stone-500 dark:text-stone-500">
               Web notifications also require Safari 16 or later on macOS Ventura+. On iPhone/iPad they only work when the page has been added to the Home Screen as a Web App.
             </p>
           </details>
 
-          <details class="rounded-lg border border-stone-200 bg-stone-50 p-3">
-            <summary class="cursor-pointer font-medium text-stone-800">Chrome / Edge / Brave</summary>
-            <ol class="mt-2 ml-5 list-decimal space-y-1 text-stone-600">
+          <details class="rounded-lg border border-stone-200 dark:border-stone-600 bg-stone-50 dark:bg-stone-700 p-3">
+            <summary class="cursor-pointer font-medium text-stone-800 dark:text-stone-200">Chrome / Edge / Brave</summary>
+            <ol class="mt-2 ml-5 list-decimal space-y-1 text-stone-600 dark:text-stone-400">
               <li>Click the padlock (or "Not secure") icon next to the address bar.</li>
-              <li>Choose <span class="font-medium text-stone-800">Site settings</span>.</li>
-              <li>Under <span class="font-medium text-stone-800">Notifications</span>, pick <span class="font-medium text-stone-800">Allow</span>.</li>
+              <li>Choose <span class="font-medium text-stone-800 dark:text-stone-200">Site settings</span>.</li>
+              <li>Under <span class="font-medium text-stone-800 dark:text-stone-200">Notifications</span>, pick <span class="font-medium text-stone-800 dark:text-stone-200">Allow</span>.</li>
               <li>Reload this page.</li>
             </ol>
           </details>
 
-          <details class="rounded-lg border border-stone-200 bg-stone-50 p-3">
-            <summary class="cursor-pointer font-medium text-stone-800">Firefox</summary>
-            <ol class="mt-2 ml-5 list-decimal space-y-1 text-stone-600">
+          <details class="rounded-lg border border-stone-200 dark:border-stone-600 bg-stone-50 dark:bg-stone-700 p-3">
+            <summary class="cursor-pointer font-medium text-stone-800 dark:text-stone-200">Firefox</summary>
+            <ol class="mt-2 ml-5 list-decimal space-y-1 text-stone-600 dark:text-stone-400">
               <li>Click the padlock icon next to the address bar.</li>
-              <li>Click the <span class="font-medium text-stone-800">&gt;</span> next to "Permissions".</li>
-              <li>Find <span class="font-medium text-stone-800">Send Notifications</span> and clear the "Blocked" override (or pick Allow).</li>
+              <li>Click the <span class="font-medium text-stone-800 dark:text-stone-200">&gt;</span> next to "Permissions".</li>
+              <li>Find <span class="font-medium text-stone-800 dark:text-stone-200">Send Notifications</span> and clear the "Blocked" override (or pick Allow).</li>
               <li>Reload this page.</li>
             </ol>
           </details>
         </div>
       </div>
     </div>
-    <div class="flex items-center justify-end gap-2 border-t border-stone-100 px-6 py-3">
+    <div class="flex items-center justify-end gap-2 border-t border-stone-100 dark:border-stone-700 px-6 py-3">
       <button type="button" data-notif-blocked-close
-              class="rounded-md px-3 py-1.5 text-sm text-stone-600 hover:bg-stone-100">Close</button>
+              class="rounded-md px-3 py-1.5 text-sm text-stone-600 dark:text-stone-400 hover:bg-stone-100 dark:hover:bg-stone-700">Close</button>
     </div>
   </div>
 </div>

@@ -3,6 +3,17 @@
 @source "../../templates/**/*.html";
 @source "../js/**/*.js";
 
+/* Custom dark mode variant that respects data-theme attribute override.
+   - data-theme="dark" → forced dark
+   - data-theme="light" → forced light (media query gated out)
+   - no attribute → follow prefers-color-scheme */
+@custom-variant dark {
+  &:where([data-theme="dark"], [data-theme="dark"] *) { @slot; }
+  @media (prefers-color-scheme: dark) {
+    &:where(html:not([data-theme="light"]), html:not([data-theme="light"]) *) { @slot; }
+  }
+}
+
 /* Brand accent tokens — used sparingly on top of the existing stone/amber
    chrome so the UI keeps its clean white feel. See brand/BRAND.md.
    - ring-brand: sage ring on the task checkbox (both states).
@@ -13,6 +24,22 @@
   --color-tick:       #2f5e3c;
   --color-rust:       #a85432;
 }
+
+/* Dark-mode token overrides — sit outside @theme so the variant rules apply.
+   tick is too dark on stone-900; rust needs a nudge too. */
+html[data-theme="dark"] {
+  --color-tick: #7fae8c;
+  --color-rust: #c47550;
+}
+@media (prefers-color-scheme: dark) {
+  html:not([data-theme="light"]) {
+    --color-tick: #7fae8c;
+    --color-rust: #c47550;
+  }
+}
+
+/* Tell browser to render native form controls appropriately for both themes */
+html { color-scheme: light dark; }
 
 /* HTMX leaves htmx-swapping on an element for the configured swap delay before
    deleting it. Used by task-row complete/uncomplete to fade out instead of
@@ -57,6 +84,19 @@
   box-shadow: 0 10px 25px -5px rgba(0,0,0,0.15), 0 8px 10px -6px rgba(0,0,0,0.1);
   border-radius: 0.5rem;
 }
+/* Dark mode sortable overrides */
+html[data-theme="dark"] .sortable-chosen { background-color: #44403c; } /* stone-700 */
+html[data-theme="dark"] .sortable-drag {
+  background-color: #292524; /* stone-800 */
+  box-shadow: 0 10px 25px -5px rgba(0,0,0,0.4), 0 8px 10px -6px rgba(0,0,0,0.3);
+}
+@media (prefers-color-scheme: dark) {
+  html:not([data-theme="light"]) .sortable-chosen { background-color: #44403c; }
+  html:not([data-theme="light"]) .sortable-drag {
+    background-color: #292524;
+    box-shadow: 0 10px 25px -5px rgba(0,0,0,0.4), 0 8px 10px -6px rgba(0,0,0,0.3);
+  }
+}
 
 /* Cross-list drag visuals: when a task is dragged over a project row, the
    row temporarily contains the inserted <li> (placeholder + ghost). Hide
@@ -67,6 +107,17 @@
   outline: 2px solid #fbbf24; /* amber-400 */
   outline-offset: -2px;
   background-color: #fef3c7; /* amber-100 */
+}
+/* Dark mode drop-zone */
+html[data-theme="dark"] [data-project-drop]:has(> li) > a {
+  outline-color: #fcd34d; /* amber-300 */
+  background-color: rgba(120, 53, 15, 0.4); /* amber-900/40 */
+}
+@media (prefers-color-scheme: dark) {
+  html:not([data-theme="light"]) [data-project-drop]:has(> li) > a {
+    outline-color: #fcd34d;
+    background-color: rgba(120, 53, 15, 0.4);
+  }
 }
 
 /* Rendered markdown preview in the task detail panel. Tailwind's typography
@@ -88,3 +139,30 @@
 .notes-preview table { width: 100%; border-collapse: collapse; }
 .notes-preview th, .notes-preview td { border: 1px solid #e7e5e4; padding: 0.25rem 0.5rem; text-align: left; }
 .notes-preview del { text-decoration: line-through; color: #78716c; }
+
+/* Dark mode notes-preview */
+html[data-theme="dark"] .notes-preview h1,
+html[data-theme="dark"] .notes-preview h2,
+html[data-theme="dark"] .notes-preview h3 { color: #f5f5f4; } /* stone-100 */
+html[data-theme="dark"] .notes-preview a { color: #fbbf24; } /* amber-400 */
+html[data-theme="dark"] .notes-preview code { background: #44403c; } /* stone-700 */
+html[data-theme="dark"] .notes-preview pre { background: #44403c; }
+html[data-theme="dark"] .notes-preview blockquote { border-left-color: #57534e; color: #a8a29e; } /* stone-600, stone-400 */
+html[data-theme="dark"] .notes-preview hr { border-top-color: #57534e; }
+html[data-theme="dark"] .notes-preview th,
+html[data-theme="dark"] .notes-preview td { border-color: #57534e; }
+html[data-theme="dark"] .notes-preview del { color: #a8a29e; }
+
+@media (prefers-color-scheme: dark) {
+  html:not([data-theme="light"]) .notes-preview h1,
+  html:not([data-theme="light"]) .notes-preview h2,
+  html:not([data-theme="light"]) .notes-preview h3 { color: #f5f5f4; }
+  html:not([data-theme="light"]) .notes-preview a { color: #fbbf24; }
+  html:not([data-theme="light"]) .notes-preview code { background: #44403c; }
+  html:not([data-theme="light"]) .notes-preview pre { background: #44403c; }
+  html:not([data-theme="light"]) .notes-preview blockquote { border-left-color: #57534e; color: #a8a29e; }
+  html:not([data-theme="light"]) .notes-preview hr { border-top-color: #57534e; }
+  html:not([data-theme="light"]) .notes-preview th,
+  html:not([data-theme="light"]) .notes-preview td { border-color: #57534e; }
+  html:not([data-theme="light"]) .notes-preview del { color: #a8a29e; }
+}

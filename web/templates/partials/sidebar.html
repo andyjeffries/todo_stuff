@@ -7,11 +7,11 @@
   (t/i/u/a/l for smart lists, 1-9 for projects).
 */}}
 {{define "kbd"}}
-<kbd class="inline-flex h-[18px] min-w-[18px] items-center justify-center rounded border border-stone-200 bg-white/70 px-1 text-[10px] font-mono leading-none text-stone-500 shadow-[inset_0_-1px_0_rgba(0,0,0,0.04)]">{{.}}</kbd>
+<kbd class="inline-flex h-[18px] min-w-[18px] items-center justify-center rounded border border-stone-200 dark:border-stone-600 bg-white/70 dark:bg-stone-800/70 px-1 text-[10px] font-mono leading-none text-stone-500 dark:text-stone-400 shadow-[inset_0_-1px_0_rgba(0,0,0,0.04)]">{{.}}</kbd>
 {{end}}
 
 {{define "kbd-badge"}}
-<kbd class="ml-auto inline-flex h-[18px] min-w-[18px] items-center justify-center rounded border border-stone-200 bg-white/70 px-1 text-[10px] font-mono leading-none text-stone-400 shadow-[inset_0_-1px_0_rgba(0,0,0,0.04)]">{{.}}</kbd>
+<kbd class="ml-auto inline-flex h-[18px] min-w-[18px] items-center justify-center rounded border border-stone-200 dark:border-stone-600 bg-white/70 dark:bg-stone-800/70 px-1 text-[10px] font-mono leading-none text-stone-400 dark:text-stone-500 shadow-[inset_0_-1px_0_rgba(0,0,0,0.04)]">{{.}}</kbd>
 {{end}}
 
 {{define "sidebar"}}
@@ -26,7 +26,7 @@
 <aside id="sidebar"
        aria-hidden="true"
        class="fixed inset-y-0 left-0 z-40 w-60 -translate-x-full transition-transform duration-200 ease-out
-              border-r border-stone-200 bg-stone-100 flex flex-col select-none
+              border-r border-stone-200 dark:border-stone-700 bg-stone-100 dark:bg-stone-900 flex flex-col select-none
               sm:relative sm:translate-x-0 sm:transition-none sm:shrink-0 sm:z-auto">
   <div class="px-5 py-4 flex items-center gap-2">
     <img src="/static/brand/todostuff-icon-128.png" alt="" width="32" height="32" class="h-8 w-8 rounded-lg shadow-sm">
@@ -36,55 +36,55 @@
          sidebar's quick-add affordance on mobile to avoid duplication. */}}
     <button type="button" data-sidebar-close
             aria-label="Close menu"
-            class="ml-auto inline-flex h-9 w-9 items-center justify-center rounded-md text-stone-500 hover:bg-stone-200 hover:text-stone-900 sm:hidden">
+            class="ml-auto inline-flex h-9 w-9 items-center justify-center rounded-md text-stone-500 dark:text-stone-400 hover:bg-stone-200 dark:hover:bg-stone-700 hover:text-stone-900 dark:hover:text-stone-100 sm:hidden">
       <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="h-5 w-5"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18 18 6M6 6l12 12"/></svg>
     </button>
     <button type="button" data-quick-add
             aria-label="Quick add task"
-            class="ml-auto hidden h-7 w-7 items-center justify-center rounded-md text-stone-500 hover:bg-stone-200 hover:text-stone-900 sm:inline-flex">
+            class="ml-auto hidden h-7 w-7 items-center justify-center rounded-md text-stone-500 dark:text-stone-400 hover:bg-stone-200 dark:hover:bg-stone-700 hover:text-stone-900 dark:hover:text-stone-100 sm:inline-flex">
       {{template "icon-plus" "h-4 w-4"}}
     </button>
   </div>
 
   <nav class="flex-1 overflow-y-auto px-2 pb-4 space-y-0.5">
-    <div class="px-3 pt-3 pb-1 text-[11px] uppercase tracking-wider text-stone-500">Lists</div>
+    <div class="px-3 pt-3 pb-1 text-[11px] uppercase tracking-wider text-stone-500 dark:text-stone-400">Lists</div>
 
-    <a href="/today" class="flex items-center gap-2.5 px-3 py-2 sm:py-1.5 rounded-md text-sm {{if eq .ActiveView "today"}}bg-amber-100 text-amber-900 font-medium{{else}}text-stone-700 hover:bg-stone-200{{end}}">
+    <a href="/today" class="flex items-center gap-2.5 px-3 py-2 sm:py-1.5 rounded-md text-sm {{if eq .ActiveView "today"}}bg-amber-100 dark:bg-amber-900/30 text-amber-900 dark:text-amber-100 font-medium{{else}}text-stone-700 dark:text-stone-300 hover:bg-stone-200 dark:hover:bg-stone-700{{end}}">
       {{template "icon-star-solid" "h-4 w-4 shrink-0 text-amber-500"}}
       <span>Today</span>
       {{template "kbd-badge" "T"}}
     </a>
 
-    <a href="/inbox" class="flex items-center gap-2.5 px-3 py-2 sm:py-1.5 rounded-md text-sm {{if eq .ActiveView "inbox"}}bg-amber-100 text-amber-900 font-medium{{else}}text-stone-700 hover:bg-stone-200{{end}}">
-      {{template "icon-inbox" "h-4 w-4 shrink-0 text-stone-500"}}
+    <a href="/inbox" class="flex items-center gap-2.5 px-3 py-2 sm:py-1.5 rounded-md text-sm {{if eq .ActiveView "inbox"}}bg-amber-100 dark:bg-amber-900/30 text-amber-900 dark:text-amber-100 font-medium{{else}}text-stone-700 dark:text-stone-300 hover:bg-stone-200 dark:hover:bg-stone-700{{end}}">
+      {{template "icon-inbox" "h-4 w-4 shrink-0 text-stone-500 dark:text-stone-400"}}
       <span>Inbox</span>
       {{template "kbd-badge" "I"}}
     </a>
 
-    <a href="/upcoming" class="flex items-center gap-2.5 px-3 py-2 sm:py-1.5 rounded-md text-sm {{if eq .ActiveView "upcoming"}}bg-amber-100 text-amber-900 font-medium{{else}}text-stone-700 hover:bg-stone-200{{end}}">
+    <a href="/upcoming" class="flex items-center gap-2.5 px-3 py-2 sm:py-1.5 rounded-md text-sm {{if eq .ActiveView "upcoming"}}bg-amber-100 dark:bg-amber-900/30 text-amber-900 dark:text-amber-100 font-medium{{else}}text-stone-700 dark:text-stone-300 hover:bg-stone-200 dark:hover:bg-stone-700{{end}}">
       {{template "icon-calendar" "h-4 w-4 shrink-0 text-rose-400"}}
       <span>Upcoming</span>
       {{template "kbd-badge" "U"}}
     </a>
 
-    <a href="/anytime" class="flex items-center gap-2.5 px-3 py-2 sm:py-1.5 rounded-md text-sm {{if eq .ActiveView "anytime"}}bg-amber-100 text-amber-900 font-medium{{else}}text-stone-700 hover:bg-stone-200{{end}}">
+    <a href="/anytime" class="flex items-center gap-2.5 px-3 py-2 sm:py-1.5 rounded-md text-sm {{if eq .ActiveView "anytime"}}bg-amber-100 dark:bg-amber-900/30 text-amber-900 dark:text-amber-100 font-medium{{else}}text-stone-700 dark:text-stone-300 hover:bg-stone-200 dark:hover:bg-stone-700{{end}}">
       {{template "icon-stack" "h-4 w-4 shrink-0 text-emerald-500"}}
       <span>Anytime</span>
       {{template "kbd-badge" "A"}}
     </a>
 
-    <a href="/logbook" class="flex items-center gap-2.5 px-3 py-2 sm:py-1.5 rounded-md text-sm {{if eq .ActiveView "logbook"}}bg-amber-100 text-amber-900 font-medium{{else}}text-stone-700 hover:bg-stone-200{{end}}">
-      {{template "icon-archive" "h-4 w-4 shrink-0 text-stone-500"}}
+    <a href="/logbook" class="flex items-center gap-2.5 px-3 py-2 sm:py-1.5 rounded-md text-sm {{if eq .ActiveView "logbook"}}bg-amber-100 dark:bg-amber-900/30 text-amber-900 dark:text-amber-100 font-medium{{else}}text-stone-700 dark:text-stone-300 hover:bg-stone-200 dark:hover:bg-stone-700{{end}}">
+      {{template "icon-archive" "h-4 w-4 shrink-0 text-stone-500 dark:text-stone-400"}}
       <span>Logbook</span>
       {{template "kbd-badge" "L"}}
     </a>
 
     <div class="flex items-center justify-between px-3 pt-6 pb-1">
-      <span class="text-[11px] uppercase tracking-wider text-stone-500">Projects</span>
+      <span class="text-[11px] uppercase tracking-wider text-stone-500 dark:text-stone-400">Projects</span>
       <button type="button"
               data-toggle="#project-create"
               aria-label="New project"
-              class="rounded p-0.5 text-stone-500 hover:bg-stone-200 hover:text-stone-800">
+              class="rounded p-0.5 text-stone-500 dark:text-stone-400 hover:bg-stone-200 dark:hover:bg-stone-700 hover:text-stone-800 dark:hover:text-stone-200">
         {{template "icon-plus" "h-3.5 w-3.5"}}
       </button>
     </div>
@@ -92,9 +92,9 @@
     {{template "project-list" (dict "Projects" .Projects "ActiveProjectID" .ActiveProjectID)}}
 
     {{if .User.IsAdmin}}
-    <div class="px-3 pt-6 pb-1 text-[11px] uppercase tracking-wider text-stone-500">Admin</div>
-    <a href="/admin/users" class="flex items-center gap-2.5 px-3 py-2 sm:py-1.5 rounded-md text-sm {{if eq .ActiveView "admin-users"}}bg-amber-100 text-amber-900 font-medium{{else}}text-stone-700 hover:bg-stone-200{{end}}">
-      {{template "icon-users" "h-4 w-4 shrink-0 text-stone-500"}}
+    <div class="px-3 pt-6 pb-1 text-[11px] uppercase tracking-wider text-stone-500 dark:text-stone-400">Admin</div>
+    <a href="/admin/users" class="flex items-center gap-2.5 px-3 py-2 sm:py-1.5 rounded-md text-sm {{if eq .ActiveView "admin-users"}}bg-amber-100 dark:bg-amber-900/30 text-amber-900 dark:text-amber-100 font-medium{{else}}text-stone-700 dark:text-stone-300 hover:bg-stone-200 dark:hover:bg-stone-700{{end}}">
+      {{template "icon-users" "h-4 w-4 shrink-0 text-stone-500 dark:text-stone-400"}}
       <span>Users</span>
     </a>
     {{end}}
@@ -102,45 +102,45 @@
     <form id="project-create"
           hx-post="/projects" hx-target="#project-list" hx-swap="outerHTML"
           hx-on::after-request="if(event.detail.successful) { this.reset(); this.classList.add('hidden'); }"
-          class="hidden mx-1 mt-2 rounded-md border border-stone-200 bg-white p-2 shadow-sm">
+          class="hidden mx-1 mt-2 rounded-md border border-stone-200 dark:border-stone-700 bg-white dark:bg-stone-800 p-2 shadow-sm">
       <input type="text" name="name" required maxlength="80" placeholder="Project name"
              autocomplete="off"
-             class="w-full rounded border border-stone-200 bg-stone-50 px-2 py-1 text-sm focus:border-amber-400 focus:outline-none">
+             class="w-full rounded border border-stone-200 dark:border-stone-600 bg-stone-50 dark:bg-stone-900 px-2 py-1 text-sm text-stone-900 dark:text-stone-100 placeholder-stone-400 dark:placeholder-stone-500 focus:border-amber-400 focus:outline-none">
       <div class="mt-2">
         {{template "project-icon-picker" "folder"}}
       </div>
       <div class="mt-2 flex items-center justify-end gap-2 text-xs">
         <button type="button" data-toggle="#project-create"
-                class="text-stone-500 hover:text-stone-800">Cancel</button>
+                class="text-stone-500 dark:text-stone-400 hover:text-stone-800 dark:hover:text-stone-200">Cancel</button>
         <button type="submit"
                 class="rounded bg-amber-400 px-2 py-1 font-medium text-stone-900 hover:bg-amber-500">Add</button>
       </div>
     </form>
   </nav>
 
-  <div class="border-t border-stone-200 px-3 py-3 space-y-2">
+  <div class="border-t border-stone-200 dark:border-stone-700 px-3 py-3 space-y-2">
     {{/* Notification permission toggle. JS shows/hides + relabels this based
          on Notification.permission ("default" / "denied"; hidden when
          "granted"). The click is the user gesture browsers now require
          before the permission prompt will appear. */}}
     <button type="button" data-notif-toggle
-            class="hidden w-full inline-flex items-center gap-2 rounded-md border border-stone-200 bg-white px-2.5 py-1.5 text-xs text-stone-700 hover:bg-stone-50 disabled:cursor-help disabled:hover:bg-white">
+            class="hidden w-full inline-flex items-center gap-2 rounded-md border border-stone-200 dark:border-stone-700 bg-white dark:bg-stone-800 px-2.5 py-1.5 text-xs text-stone-700 dark:text-stone-200 hover:bg-stone-50 dark:hover:bg-stone-700 disabled:cursor-help disabled:hover:bg-white dark:disabled:hover:bg-stone-800">
       <span data-notif-icon="on">{{template "icon-bell" "h-4 w-4 shrink-0 text-amber-500"}}</span>
-      <span data-notif-icon="off" class="hidden">{{template "icon-bell-slash" "h-4 w-4 shrink-0 text-stone-400"}}</span>
+      <span data-notif-icon="off" class="hidden">{{template "icon-bell-slash" "h-4 w-4 shrink-0 text-stone-400 dark:text-stone-500"}}</span>
       <span data-notif-label class="truncate">Enable reminders</span>
     </button>
 
     <form method="POST" action="/logout" class="flex items-center justify-between gap-2">
-      <a href="/profile" class="truncate text-sm text-stone-700 hover:text-stone-900 inline-flex items-center gap-1.5 {{if eq .ActiveView "profile"}}font-medium text-stone-900{{end}}" title="{{.User.Email}}">
-        {{template "icon-user" "h-3.5 w-3.5 shrink-0 text-stone-500"}}
+      <a href="/profile" class="truncate text-sm text-stone-700 dark:text-stone-300 hover:text-stone-900 dark:hover:text-stone-100 inline-flex items-center gap-1.5 {{if eq .ActiveView "profile"}}font-medium text-stone-900 dark:text-stone-100{{end}}" title="{{.User.Email}}">
+        {{template "icon-user" "h-3.5 w-3.5 shrink-0 text-stone-500 dark:text-stone-400"}}
         <span class="truncate">{{.User.Name}}</span>
       </a>
       <div class="flex items-center gap-2">
         <button type="button" data-shortcuts-open
                 aria-label="Keyboard shortcuts"
                 title="Keyboard shortcuts (?)"
-                class="inline-flex h-6 w-6 items-center justify-center rounded border border-stone-200 bg-white/70 text-[11px] font-mono leading-none text-stone-400 hover:text-stone-700 hover:border-stone-300">?</button>
-        <button type="submit" class="text-xs text-stone-500 hover:text-stone-900">Sign out</button>
+                class="inline-flex h-6 w-6 items-center justify-center rounded border border-stone-200 dark:border-stone-600 bg-white/70 dark:bg-stone-800/70 text-[11px] font-mono leading-none text-stone-400 dark:text-stone-500 hover:text-stone-700 dark:hover:text-stone-200 hover:border-stone-300 dark:hover:border-stone-500">?</button>
+        <button type="submit" class="text-xs text-stone-500 dark:text-stone-400 hover:text-stone-900 dark:hover:text-stone-100">Sign out</button>
       </div>
     </form>
   </div>

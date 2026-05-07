@@ -7,10 +7,12 @@ import (
 	"strings"
 
 	"github.com/andyjessop/todostuff/internal/auth"
+	appmw "github.com/andyjessop/todostuff/internal/middleware"
 )
 
 type loginViewData struct {
 	Title    string
+	Theme    string
 	Subtitle string
 	Email    string
 	Error    string
@@ -21,7 +23,7 @@ func (h *Handlers) LoginPage(w http.ResponseWriter, r *http.Request) {
 		http.Redirect(w, r, "/today", http.StatusFound)
 		return
 	}
-	data := loginViewData{Title: "Sign in", Subtitle: "Welcome back."}
+	data := loginViewData{Title: "Sign in", Subtitle: "Welcome back.", Theme: appmw.ThemeFromContext(r.Context())}
 	if err := h.Render.Render(w, http.StatusOK, "login", "auth", data); err != nil {
 		slog.Error("render login", "err", err)
 		http.Error(w, "internal error", http.StatusInternalServerError)
@@ -42,7 +44,7 @@ func (h *Handlers) LoginSubmit(w http.ResponseWriter, r *http.Request) {
 			slog.Error("authenticate", "err", err)
 		}
 		data := loginViewData{Title: "Sign in", Subtitle: "Welcome back.", Email: email,
-			Error: "Email or password is incorrect."}
+			Error: "Email or password is incorrect.", Theme: appmw.ThemeFromContext(r.Context())}
 		_ = h.Render.Render(w, http.StatusUnauthorized, "login", "auth", data)
 		return
 	}

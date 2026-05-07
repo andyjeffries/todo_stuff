@@ -7,6 +7,7 @@ import (
 	"strings"
 
 	"github.com/andyjessop/todostuff/internal/auth"
+	appmw "github.com/andyjessop/todostuff/internal/middleware"
 	"github.com/andyjessop/todostuff/internal/models"
 	"github.com/andyjessop/todostuff/internal/notifications"
 )
@@ -20,6 +21,7 @@ import (
 // at-rest UI or an editable input pre-filled with their draft.
 type profileViewData struct {
 	Title               string
+	Theme               string
 	ActiveView          string
 	ActiveProjectID     string
 	User                *models.User
@@ -182,6 +184,7 @@ func (h *Handlers) renderProfile(w http.ResponseWriter, r *http.Request, section
 
 	data := profileViewData{
 		Title:               "Profile",
+		Theme:               appmw.ThemeFromContext(r.Context()),
 		ActiveView:          "profile",
 		User:                user,
 		Projects:            h.loadSidebarProjects(r, user.ID),

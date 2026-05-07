@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"github.com/andyjessop/todostuff/internal/auth"
+	appmw "github.com/andyjessop/todostuff/internal/middleware"
 	"github.com/andyjessop/todostuff/internal/models"
 	"github.com/andyjessop/todostuff/internal/services"
 )
@@ -13,6 +14,7 @@ import (
 // appViewData drives any page rendered against the "app" layout.
 type appViewData struct {
 	Title           string
+	Theme           string
 	ActiveView      string
 	ActiveProjectID string
 	Heading         string
@@ -35,6 +37,7 @@ func (h *Handlers) renderAppView(w http.ResponseWriter, r *http.Request, page st
 	if data.Projects == nil && data.User != nil {
 		data.Projects = h.loadSidebarProjects(r, data.User.ID)
 	}
+	data.Theme = appmw.ThemeFromContext(r.Context())
 	if err := h.Render.Render(w, http.StatusOK, page, "app", data); err != nil {
 		slog.Error("render app view", "page", page, "err", err)
 		http.Error(w, "internal error", http.StatusInternalServerError)
@@ -110,6 +113,7 @@ func (h *Handlers) Upcoming(w http.ResponseWriter, r *http.Request) {
 		data.User = u
 		data.Projects = h.loadSidebarProjects(r, u.ID)
 	}
+	data.Theme = appmw.ThemeFromContext(r.Context())
 	if err := h.Render.Render(w, http.StatusOK, "upcoming", "app", data); err != nil {
 		slog.Error("render app view", "page", "upcoming", "err", err)
 		http.Error(w, "internal error", http.StatusInternalServerError)
@@ -199,6 +203,7 @@ func (h *Handlers) Logbook(w http.ResponseWriter, r *http.Request) {
 		data.User = u
 		data.Projects = h.loadSidebarProjects(r, u.ID)
 	}
+	data.Theme = appmw.ThemeFromContext(r.Context())
 	if err := h.Render.Render(w, http.StatusOK, "logbook", "app", data); err != nil {
 		slog.Error("render app view", "page", "logbook", "err", err)
 		http.Error(w, "internal error", http.StatusInternalServerError)

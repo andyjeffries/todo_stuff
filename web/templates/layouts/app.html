@@ -1,14 +1,16 @@
 {{define "app"}}<!doctype html>
-<html lang="en">
+<html lang="en"{{with .Theme}} data-theme="{{.}}"{{end}}>
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="color-scheme" content="light dark">
   <title>{{.Title}} · TodoStuff</title>
-  <link rel="icon" href="/static/favicon.ico" sizes="any">
-  <link rel="icon" type="image/svg+xml" href="/static/brand/todostuff-icon.svg">
+  <link rel="icon" type="image/svg+xml" href="/static/brand/todostuff-icon.svg" media="(prefers-color-scheme: light)">
+  <link rel="icon" type="image/svg+xml" href="/static/brand/todostuff-icon-monochrome.svg" media="(prefers-color-scheme: dark)">
   <link rel="apple-touch-icon" href="/static/brand/apple-touch-icon.png">
   <link rel="manifest" href="/static/manifest.webmanifest">
-  <meta name="theme-color" content="#efe9de">
+  <meta name="theme-color" content="#efe9de" media="(prefers-color-scheme: light)">
+  <meta name="theme-color" content="#1c1917" media="(prefers-color-scheme: dark)">
   <meta property="og:title" content="TodoStuff">
   <meta property="og:description" content="A calm, self-hosted Go to-do app with SQLite storage.">
   <meta property="og:image" content="/static/brand/todostuff-social-1200x630.png">
@@ -16,7 +18,7 @@
   <meta name="twitter:card" content="summary_large_image">
   <link rel="stylesheet" href="/static/css/app.css">
 </head>
-<body data-app-shell class="h-full bg-stone-50 text-stone-900 antialiased">
+<body data-app-shell class="h-full bg-stone-50 dark:bg-stone-900 text-stone-900 dark:text-stone-200 antialiased">
   <div id="htmx-progress" aria-hidden="true"></div>
   <div class="flex h-screen overflow-hidden">
     {{template "sidebar" .}}
@@ -26,11 +28,11 @@
            so we surface a hamburger + the wordmark here so the user can
            always orient and reach navigation. Hidden on sm and up where the
            sidebar is in-flow. */}}
-      <header class="flex items-center gap-3 border-b border-stone-200 bg-white px-3 py-2 sm:hidden">
+      <header class="flex items-center gap-3 border-b border-stone-200 dark:border-stone-700 bg-white dark:bg-stone-800 px-3 py-2 sm:hidden">
         <button type="button" data-sidebar-open
                 aria-label="Open menu"
                 aria-controls="sidebar"
-                class="inline-flex h-10 w-10 items-center justify-center rounded-md text-stone-700 hover:bg-stone-100">
+                class="inline-flex h-10 w-10 items-center justify-center rounded-md text-stone-700 dark:text-stone-300 hover:bg-stone-100 dark:hover:bg-stone-700">
           <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.75" stroke="currentColor" class="h-5 w-5"><path stroke-linecap="round" stroke-linejoin="round" d="M3.75 6.75h16.5M3.75 12h16.5m-16.5 5.25h16.5"/></svg>
         </button>
         <img src="/static/brand/todostuff-icon-128.png" alt="" width="28" height="28" class="h-7 w-7 rounded-md shadow-sm">
@@ -48,7 +50,7 @@
   {{/* Sidebar backdrop. Only meaningful when the mobile sidebar is open;
        sm:hidden keeps it out of the desktop layout entirely. */}}
   <div id="sidebar-backdrop"
-       class="fixed inset-0 z-30 bg-stone-900/30 opacity-0 pointer-events-none transition-opacity duration-200 sm:hidden"
+       class="fixed inset-0 z-30 bg-stone-900/30 dark:bg-black/60 opacity-0 pointer-events-none transition-opacity duration-200 sm:hidden"
        aria-hidden="true"></div>
 
   {{/* Floating action button — opens the quick-add modal from anywhere. */}}
@@ -63,7 +65,7 @@
   {{template "shortcuts-modal" .}}
 
   <div id="detail-backdrop"
-       class="fixed inset-0 z-30 bg-stone-900/20 opacity-0 pointer-events-none transition-opacity duration-300 ease-out"
+       class="fixed inset-0 z-30 bg-stone-900/20 dark:bg-black/60 opacity-0 pointer-events-none transition-opacity duration-300 ease-out"
        aria-hidden="true"></div>
 
   <aside id="detail-panel"
@@ -71,18 +73,18 @@
          aria-modal="true"
          aria-hidden="true"
          tabindex="-1"
-         class="fixed inset-y-0 right-0 z-40 flex w-full max-w-md flex-col border-l border-stone-200 bg-white shadow-xl
+         class="fixed inset-y-0 right-0 z-40 flex w-full max-w-md flex-col border-l border-stone-200 dark:border-stone-700 bg-white dark:bg-stone-800 shadow-xl
                 translate-x-full transition-transform duration-300 ease-out">
-    <header class="flex items-center justify-between px-5 py-3 border-b border-stone-200">
-      <h2 class="text-sm font-medium text-stone-700">Task</h2>
+    <header class="flex items-center justify-between px-5 py-3 border-b border-stone-200 dark:border-stone-700">
+      <h2 class="text-sm font-medium text-stone-700 dark:text-stone-200">Task</h2>
       <button type="button" data-detail-close
-              class="inline-flex h-9 w-9 items-center justify-center rounded-md text-stone-400 hover:bg-stone-100 hover:text-stone-700"
+              class="inline-flex h-9 w-9 items-center justify-center rounded-md text-stone-400 dark:text-stone-500 hover:bg-stone-100 dark:hover:bg-stone-700 hover:text-stone-700 dark:hover:text-stone-200"
               aria-label="Close task detail">
         <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.75" stroke="currentColor" class="h-5 w-5"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18 18 6M6 6l12 12"/></svg>
       </button>
     </header>
     <div id="detail-panel-body" class="flex-1 overflow-y-auto p-5">
-      <p class="text-sm text-stone-400">Select a task to see its details.</p>
+      <p class="text-sm text-stone-400 dark:text-stone-500">Select a task to see its details.</p>
     </div>
   </aside>
 

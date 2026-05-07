@@ -70,6 +70,7 @@ func main() {
 	r.Use(middleware.Logger)
 	r.Use(appmw.Recover(h.InternalError))
 	r.Use(appmw.AllowHead)
+	r.Use(appmw.Theme)
 	r.NotFound(h.NotFound)
 	r.MethodNotAllowed(h.MethodNotAllowed)
 

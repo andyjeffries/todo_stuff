@@ -13,22 +13,22 @@
 
 {{define "task-notes-display-body"}}
 {{if and .NotesHTML.Valid (ne .NotesHTML.String "")}}
-  <div class="notes-preview text-sm text-stone-700">{{safeHTML .NotesHTML.String}}</div>
+  <div class="notes-preview text-sm text-stone-700 dark:text-stone-300">{{safeHTML .NotesHTML.String}}</div>
 {{else}}
-  <div class="text-sm text-stone-400">Add notes — Markdown supported.</div>
+  <div class="text-sm text-stone-400 dark:text-stone-500">Add notes — Markdown supported.</div>
 {{end}}
 {{end}}
 
 {{define "task-notes-display"}}
 <div id="task-notes-display-{{.ID}}" data-notes-display
-     class="mt-1 cursor-text rounded-lg border border-stone-200 bg-stone-50 px-3 py-2 hover:border-stone-300">
+     class="mt-1 cursor-text rounded-lg border border-stone-200 dark:border-stone-600 bg-stone-50 dark:bg-stone-900 px-3 py-2 hover:border-stone-300 dark:hover:border-stone-500">
   {{template "task-notes-display-body" .}}
 </div>
 {{end}}
 
 {{define "task-notes-display-oob"}}
 <div id="task-notes-display-{{.ID}}" hx-swap-oob="outerHTML" data-notes-display
-     class="mt-1 cursor-text rounded-lg border border-stone-200 bg-stone-50 px-3 py-2 hover:border-stone-300">
+     class="mt-1 cursor-text rounded-lg border border-stone-200 dark:border-stone-600 bg-stone-50 dark:bg-stone-900 px-3 py-2 hover:border-stone-300 dark:hover:border-stone-500">
   {{template "task-notes-display-body" .}}
 </div>
 {{end}}

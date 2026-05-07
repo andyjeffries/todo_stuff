@@ -8,6 +8,7 @@ import (
 	"strings"
 
 	"github.com/andyjessop/todostuff/internal/auth"
+	appmw "github.com/andyjessop/todostuff/internal/middleware"
 	"github.com/andyjessop/todostuff/internal/models"
 	"github.com/andyjessop/todostuff/internal/services"
 	"github.com/go-chi/chi/v5"
@@ -101,6 +102,7 @@ func (h *Handlers) ProjectView(w http.ResponseWriter, r *http.Request) {
 	data := projectViewData{
 		appViewData: appViewData{
 			Title:           pr.Name,
+			Theme:           appmw.ThemeFromContext(r.Context()),
 			ActiveProjectID: pr.ID,
 			Heading:         pr.Name,
 			User:            user,

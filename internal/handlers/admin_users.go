@@ -7,6 +7,7 @@ import (
 	"strings"
 
 	"github.com/andyjessop/todostuff/internal/auth"
+	appmw "github.com/andyjessop/todostuff/internal/middleware"
 	"github.com/andyjessop/todostuff/internal/models"
 	"github.com/go-chi/chi/v5"
 )
@@ -261,6 +262,7 @@ func (h *Handlers) renderAdminUsersStatus(w http.ResponseWriter, r *http.Request
 	data := adminUsersData{
 		appViewData: appViewData{
 			Title:      "Users",
+			Theme:      appmw.ThemeFromContext(r.Context()),
 			ActiveView: "admin-users",
 			Heading:    "Users",
 			Subheading: "Manage who can sign in to this TodoStuff instance.",
@@ -316,6 +318,7 @@ func (h *Handlers) renderAdminUserEdit(w http.ResponseWriter, r *http.Request, f
 	data := adminUserEditData{
 		appViewData: appViewData{
 			Title:      target.Name,
+			Theme:      appmw.ThemeFromContext(r.Context()),
 			ActiveView: "admin-users",
 			Heading:    target.Name,
 			Subheading: target.Email,

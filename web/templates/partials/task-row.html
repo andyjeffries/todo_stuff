@@ -33,24 +33,24 @@
         onclick="window.TodoStuff && window.TodoStuff.openDetail()"
         class="min-w-0 flex-1 text-left">
   <div class="flex items-center gap-2">
-    <span class="truncate text-sm {{if $t.CompletedAt.Valid}}text-stone-400 line-through{{else}}text-stone-800{{end}}">{{$t.Title}}</span>
+    <span class="truncate text-sm {{if $t.CompletedAt.Valid}}text-stone-400 dark:text-stone-500 line-through{{else}}text-stone-800 dark:text-stone-200{{end}}">{{$t.Title}}</span>
     {{if $t.IsImportant}}{{template "icon-star-solid" "h-3.5 w-3.5 shrink-0 text-amber-500"}}{{end}}
-    {{if and $t.Notes.Valid (ne $t.Notes.String "")}}{{template "icon-note" "h-3.5 w-3.5 shrink-0 text-stone-400"}}{{end}}
-    {{if $t.RecurrenceRuleID.Valid}}{{template "icon-arrow-path" "h-3.5 w-3.5 shrink-0 text-stone-400"}}{{end}}
-    {{if $t.ReminderAt.Valid}}{{template "icon-bell" "h-3.5 w-3.5 shrink-0 text-stone-400"}}{{end}}
+    {{if and $t.Notes.Valid (ne $t.Notes.String "")}}{{template "icon-note" "h-3.5 w-3.5 shrink-0 text-stone-400 dark:text-stone-500"}}{{end}}
+    {{if $t.RecurrenceRuleID.Valid}}{{template "icon-arrow-path" "h-3.5 w-3.5 shrink-0 text-stone-400 dark:text-stone-500"}}{{end}}
+    {{if $t.ReminderAt.Valid}}{{template "icon-bell" "h-3.5 w-3.5 shrink-0 text-stone-400 dark:text-stone-500"}}{{end}}
   </div>
   {{$showProject := and (not $hide) $t.ProjectName.Valid}}
   {{if or $t.DueDate.Valid $showProject}}
   <div class="mt-0.5 flex items-center gap-2 text-xs">
     {{if $t.DueDate.Valid}}
     {{$overdue := and (isOverdue $t.DueDate.Time) (not $t.CompletedAt.Valid)}}
-    <span class="inline-flex items-center gap-1 {{if $overdue}}text-rust{{else if isToday $t.DueDate.Time}}text-amber-600{{else}}text-stone-400{{end}}">
+    <span class="inline-flex items-center gap-1 {{if $overdue}}text-rust{{else if isToday $t.DueDate.Time}}text-amber-600 dark:text-amber-400{{else}}text-stone-400 dark:text-stone-500{{end}}">
       {{template "icon-calendar" "h-3 w-3 shrink-0"}}
       {{formatDueDate $t.DueDate.Time}}{{if $t.DueTime.Valid}} · {{formatTime $t.DueTime.String}}{{end}}
     </span>
     {{end}}
     {{if $showProject}}
-    <span class="inline-flex items-center gap-1 text-stone-400">
+    <span class="inline-flex items-center gap-1 text-stone-400 dark:text-stone-500">
       {{template "project-icon" (dict "Name" $t.ProjectIcon.String "Class" "h-3 w-3")}}
       <span class="truncate">{{$t.ProjectName.String}}</span>
     </span>
@@ -71,13 +71,13 @@
 <span data-drag-handle
       aria-label="Drag to reorder"
       class="mt-1 inline-flex h-4 w-4 shrink-0 items-center justify-center
-             text-stone-300 hover:text-stone-500 cursor-grab active:cursor-grabbing">
+             text-stone-300 dark:text-stone-600 hover:text-stone-500 dark:hover:text-stone-300 cursor-grab active:cursor-grabbing">
   {{template "icon-grip-vertical" "h-4 w-4"}}
 </span>
 {{end}}
 
 {{define "task-row"}}
-<li id="task-{{.Task.ID}}" class="group flex items-start gap-2 px-2 py-2 rounded-lg hover:bg-stone-100 select-none">
+<li id="task-{{.Task.ID}}" class="group flex items-start gap-2 px-2 py-2 rounded-lg hover:bg-stone-100 dark:hover:bg-stone-800 select-none">
   {{template "task-drag-handle" .}}
   {{template "task-row-body" .}}
 </li>
@@ -85,7 +85,7 @@
 
 
 {{define "task-row-oob"}}
-<li id="task-{{.Task.ID}}" hx-swap-oob="outerHTML" class="group flex items-start gap-2 px-2 py-2 rounded-lg hover:bg-stone-100 select-none">
+<li id="task-{{.Task.ID}}" hx-swap-oob="outerHTML" class="group flex items-start gap-2 px-2 py-2 rounded-lg hover:bg-stone-100 dark:hover:bg-stone-800 select-none">
   {{template "task-drag-handle" .}}
   {{template "task-row-body" .}}
 </li>

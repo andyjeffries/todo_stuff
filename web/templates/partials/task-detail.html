@@ -5,9 +5,9 @@
       hx-swap="none"
       class="space-y-5">
   <div class="flex items-start gap-3">
-    <span class="mt-1 inline-flex h-5 w-5 shrink-0 items-center justify-center rounded-full border-2 {{if $task.CompletedAt.Valid}}border-amber-400 bg-amber-400{{else}}border-stone-300{{end}}"></span>
+    <span class="mt-1 inline-flex h-5 w-5 shrink-0 items-center justify-center rounded-full border-2 {{if $task.CompletedAt.Valid}}border-amber-400 bg-amber-400{{else}}border-stone-300 dark:border-stone-600{{end}}"></span>
     <input type="text" name="title" value="{{$task.Title}}"
-           class="w-full bg-transparent text-base font-medium text-stone-900 focus:outline-none">
+           class="w-full bg-transparent text-base font-medium text-stone-900 dark:text-stone-100 focus:outline-none">
   </div>
 
   {{/* Click-to-edit notes. The rendered preview is the default state.
@@ -17,20 +17,20 @@
        saved edits, and the server's response includes an OOB swap of the
        preview so it stays in sync with the new source. */}}
   <div data-notes-block>
-    <label class="text-xs uppercase tracking-wider text-stone-500">Notes</label>
+    <label class="text-xs uppercase tracking-wider text-stone-500 dark:text-stone-400">Notes</label>
     {{template "task-notes-display" $task}}
     <textarea data-notes-edit name="notes" rows="4"
               placeholder="Add notes — Markdown supported (**bold**, lists, links)…"
-              class="hidden mt-1 w-full rounded-lg border border-stone-200 bg-stone-50 px-3 py-2 text-sm text-stone-700 focus:border-amber-400 focus:outline-none focus:ring-1 focus:ring-amber-200">{{if $task.Notes.Valid}}{{$task.Notes.String}}{{end}}</textarea>
+              class="hidden mt-1 w-full rounded-lg border border-stone-200 dark:border-stone-600 bg-stone-50 dark:bg-stone-900 px-3 py-2 text-sm text-stone-700 dark:text-stone-200 placeholder-stone-400 dark:placeholder-stone-500 focus:border-amber-400 focus:outline-none focus:ring-1 focus:ring-amber-200">{{if $task.Notes.Valid}}{{$task.Notes.String}}{{end}}</textarea>
   </div>
 
   <div>
-    <label class="text-xs uppercase tracking-wider text-stone-500">Project</label>
+    <label class="text-xs uppercase tracking-wider text-stone-500 dark:text-stone-400">Project</label>
     {{template "task-project-select" .}}
   </div>
 
   <div data-due-fields class="space-y-2">
-    <label class="text-xs uppercase tracking-wider text-stone-500">When</label>
+    <label class="text-xs uppercase tracking-wider text-stone-500 dark:text-stone-400">When</label>
     {{/* Hidden markers tell the server "the form intends to set these fields";
          a cleared <input type="date"> posts an empty value, which the handler
          translates to NULL. Without the marker, an HTMX swap that includes the
@@ -40,20 +40,20 @@
     <div class="flex items-center gap-2">
       <input type="date" name="due_date"
              value="{{if $task.DueDate.Valid}}{{formatDateInput $task.DueDate.Time}}{{end}}"
-             class="flex-1 rounded-lg border border-stone-200 bg-stone-50 px-3 py-2 text-sm text-stone-700 focus:border-amber-400 focus:outline-none focus:ring-1 focus:ring-amber-200">
+             class="flex-1 rounded-lg border border-stone-200 dark:border-stone-600 bg-stone-50 dark:bg-stone-900 px-3 py-2 text-sm text-stone-700 dark:text-stone-200 focus:border-amber-400 focus:outline-none focus:ring-1 focus:ring-amber-200">
       <input type="time" name="due_time"
              value="{{if $task.DueTime.Valid}}{{slice $task.DueTime.String 0 5}}{{end}}"
-             class="w-28 rounded-lg border border-stone-200 bg-stone-50 px-3 py-2 text-sm text-stone-700 focus:border-amber-400 focus:outline-none focus:ring-1 focus:ring-amber-200">
+             class="w-28 rounded-lg border border-stone-200 dark:border-stone-600 bg-stone-50 dark:bg-stone-900 px-3 py-2 text-sm text-stone-700 dark:text-stone-200 focus:border-amber-400 focus:outline-none focus:ring-1 focus:ring-amber-200">
     </div>
     <div class="flex items-center gap-2 text-xs">
       <button type="button" data-due-set="today"
-              class="rounded-md bg-stone-100 px-2 py-1 text-stone-600 hover:bg-amber-100 hover:text-amber-700">Today</button>
+              class="rounded-md bg-stone-100 dark:bg-stone-700 px-2 py-1 text-stone-600 dark:text-stone-300 hover:bg-amber-100 dark:hover:bg-amber-900/30 hover:text-amber-700 dark:hover:text-amber-100">Today</button>
       <button type="button" data-due-set="tomorrow"
-              class="rounded-md bg-stone-100 px-2 py-1 text-stone-600 hover:bg-amber-100 hover:text-amber-700">Tomorrow</button>
+              class="rounded-md bg-stone-100 dark:bg-stone-700 px-2 py-1 text-stone-600 dark:text-stone-300 hover:bg-amber-100 dark:hover:bg-amber-900/30 hover:text-amber-700 dark:hover:text-amber-100">Tomorrow</button>
       <button type="button" data-due-set="next-week"
-              class="rounded-md bg-stone-100 px-2 py-1 text-stone-600 hover:bg-amber-100 hover:text-amber-700">Next week</button>
+              class="rounded-md bg-stone-100 dark:bg-stone-700 px-2 py-1 text-stone-600 dark:text-stone-300 hover:bg-amber-100 dark:hover:bg-amber-900/30 hover:text-amber-700 dark:hover:text-amber-100">Next week</button>
       <button type="button" data-due-set="clear"
-              class="ml-auto rounded-md px-2 py-1 text-stone-500 hover:text-rose-500">Clear</button>
+              class="ml-auto rounded-md px-2 py-1 text-stone-500 dark:text-stone-400 hover:text-rose-500 dark:hover:text-rose-400">Clear</button>
     </div>
   </div>
 
@@ -63,7 +63,7 @@
        change so users don't see a dead control. */}}
   {{$canRemind := and $task.DueDate.Valid $task.DueTime.Valid}}
   <div data-reminder-fields class="space-y-2 {{if not $canRemind}}hidden{{end}}">
-    <label class="text-xs uppercase tracking-wider text-stone-500">Reminder</label>
+    <label class="text-xs uppercase tracking-wider text-stone-500 dark:text-stone-400">Reminder</label>
     {{/* Marker tells the handler "the form intends to set the reminder";
          a missing marker means the reminder fields aren't present this submit. */}}
     <input type="hidden" name="reminder_offset_present" value="1">
@@ -74,16 +74,16 @@
   {{$freq := ""}}{{$interval := 1}}{{$type := "on_create"}}
   {{if $rule}}{{$freq = $rule.Frequency}}{{$interval = $rule.Interval}}{{$type = $rule.RegenerationType}}{{end}}
   <div data-recurrence-fields class="space-y-2">
-    <label class="text-xs uppercase tracking-wider text-stone-500">Repeat</label>
+    <label class="text-xs uppercase tracking-wider text-stone-500 dark:text-stone-400">Repeat</label>
     {{/* recurrence_present marks intent so the handler honours an empty
          frequency as "remove rule" rather than "field absent". */}}
     <input type="hidden" name="recurrence_present" value="1">
     <div class="flex items-center gap-2">
-      <span class="text-sm text-stone-600">Every</span>
+      <span class="text-sm text-stone-600 dark:text-stone-300">Every</span>
       <input type="number" name="recurrence_interval" min="1" value="{{$interval}}"
-             class="h-10 w-16 appearance-none rounded-lg border border-stone-200 bg-stone-50 px-3 text-sm text-stone-700 focus:border-amber-400 focus:outline-none focus:ring-1 focus:ring-amber-200">
+             class="h-10 w-16 appearance-none rounded-lg border border-stone-200 dark:border-stone-600 bg-stone-50 dark:bg-stone-900 px-3 text-sm text-stone-700 dark:text-stone-200 focus:border-amber-400 focus:outline-none focus:ring-1 focus:ring-amber-200">
       <select name="recurrence_frequency"
-              class="h-10 flex-1 rounded-lg border border-stone-200 bg-stone-50 px-3 text-sm text-stone-700 focus:border-amber-400 focus:outline-none focus:ring-1 focus:ring-amber-200">
+              class="h-10 flex-1 rounded-lg border border-stone-200 dark:border-stone-600 bg-stone-50 dark:bg-stone-900 px-3 text-sm text-stone-700 dark:text-stone-200 focus:border-amber-400 focus:outline-none focus:ring-1 focus:ring-amber-200">
         <option value="" {{if eq $freq ""}}selected{{end}}>— never</option>
         <option value="days" {{if eq $freq "days"}}selected{{end}}>day(s)</option>
         <option value="weeks" {{if eq $freq "weeks"}}selected{{end}}>week(s)</option>
@@ -92,15 +92,15 @@
       </select>
     </div>
     <div data-recurrence-type-group
-         class="flex items-center gap-4 text-xs text-stone-600 {{if eq $freq ""}}hidden{{end}}">
+         class="flex items-center gap-4 text-xs text-stone-600 dark:text-stone-400 {{if eq $freq ""}}hidden{{end}}">
       <label class="inline-flex items-center gap-1.5">
         <input type="radio" name="recurrence_type" value="on_create" {{if eq $type "on_create"}}checked{{end}}
-               class="h-3.5 w-3.5 border-stone-300 text-amber-400 focus:ring-amber-300">
+               class="h-3.5 w-3.5 border-stone-300 dark:border-stone-600 text-amber-400 focus:ring-amber-300">
         Fixed schedule
       </label>
       <label class="inline-flex items-center gap-1.5">
         <input type="radio" name="recurrence_type" value="on_complete" {{if eq $type "on_complete"}}checked{{end}}
-               class="h-3.5 w-3.5 border-stone-300 text-amber-400 focus:ring-amber-300">
+               class="h-3.5 w-3.5 border-stone-300 dark:border-stone-600 text-amber-400 focus:ring-amber-300">
         After completion
       </label>
     </div>
@@ -108,19 +108,19 @@
 
   <dl class="space-y-2 text-sm">
     <div class="flex justify-between">
-      <dt class="text-stone-500">Created</dt>
-      <dd class="text-stone-700">{{formatDate $task.CreatedAt}}</dd>
+      <dt class="text-stone-500 dark:text-stone-400">Created</dt>
+      <dd class="text-stone-700 dark:text-stone-300">{{formatDate $task.CreatedAt}}</dd>
     </div>
   </dl>
 
-  <div class="pt-3 border-t border-stone-200 flex items-center justify-between">
-    <label class="inline-flex items-center gap-2 text-sm text-stone-600">
+  <div class="pt-3 border-t border-stone-200 dark:border-stone-700 flex items-center justify-between">
+    <label class="inline-flex items-center gap-2 text-sm text-stone-600 dark:text-stone-300">
       {{/* The hidden marker tells the server "the form intends to set is_important";
            when the checkbox is unchecked the browser omits it, but the marker
            still arrives, so the handler can persist false. */}}
       <input type="hidden" name="is_important_present" value="1">
       <input type="checkbox" name="is_important" value="1" {{if $task.IsImportant}}checked{{end}}
-             class="h-4 w-4 rounded border-stone-300 text-amber-400 focus:ring-amber-300">
+             class="h-4 w-4 rounded border-stone-300 dark:border-stone-600 text-amber-400 focus:ring-amber-300">
       Important
     </label>
     <button type="button"
@@ -128,7 +128,7 @@
             hx-target="#task-{{$task.ID}}" hx-swap="outerHTML"
             hx-confirm="Delete this task?"
             onclick="window.TodoStuff && window.TodoStuff.closeDetail()"
-            class="text-xs text-rose-500 hover:text-rose-700">
+            class="text-xs text-rose-500 dark:text-rose-400 hover:text-rose-700 dark:hover:text-rose-300">
       Delete
     </button>
   </div>

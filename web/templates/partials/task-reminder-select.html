@@ -28,16 +28,16 @@
   <input type="hidden" name="reminder_offset" value="{{$offset}}" data-listbox-input>
   <button type="button" data-listbox-toggle
           aria-haspopup="listbox" aria-expanded="false"
-          class="flex w-full items-center justify-between gap-2 rounded-lg border border-stone-200 bg-stone-50 px-3 py-2 text-sm text-stone-700 hover:border-stone-300 focus:border-amber-400 focus:outline-none focus:ring-1 focus:ring-amber-200">
+          class="flex w-full items-center justify-between gap-2 rounded-lg border border-stone-200 dark:border-stone-600 bg-stone-50 dark:bg-stone-900 px-3 py-2 text-sm text-stone-700 dark:text-stone-200 hover:border-stone-300 dark:hover:border-stone-500 focus:border-amber-400 focus:outline-none focus:ring-1 focus:ring-amber-200">
     <span class="flex min-w-0 items-center gap-2" data-listbox-display>
-      {{template "icon-bell" "h-4 w-4 shrink-0 text-stone-500"}}
+      {{template "icon-bell" "h-4 w-4 shrink-0 text-stone-500 dark:text-stone-400"}}
       <span class="truncate">{{$selectedLabel}}</span>
     </span>
-    {{template "icon-chevron-down" "h-4 w-4 shrink-0 text-stone-400"}}
+    {{template "icon-chevron-down" "h-4 w-4 shrink-0 text-stone-400 dark:text-stone-500"}}
   </button>
 
   <ul data-listbox-list role="listbox"
-      class="hidden absolute left-0 right-0 z-20 mt-1 max-h-60 overflow-auto rounded-lg border border-stone-200 bg-white py-1 shadow-lg">
+      class="hidden absolute left-0 right-0 z-20 mt-1 max-h-60 overflow-auto rounded-lg border border-stone-200 dark:border-stone-700 bg-white dark:bg-stone-800 py-1 shadow-lg">
     {{template "task-reminder-option" (dict "Value" ""     "Label" "None")}}
     {{template "task-reminder-option" (dict "Value" "0"    "Label" "At the time")}}
     {{template "task-reminder-option" (dict "Value" "5"    "Label" "5 minutes before")}}
@@ -57,8 +57,8 @@
 {{define "task-reminder-option"}}
 <li>
   <button type="button" role="option" data-listbox-option data-value="{{.Value}}"
-          class="flex w-full items-center gap-2 px-3 py-2 text-left text-sm text-stone-700 hover:bg-stone-100">
-    {{template "icon-bell" "h-4 w-4 shrink-0 text-stone-500"}}
+          class="flex w-full items-center gap-2 px-3 py-2 text-left text-sm text-stone-700 dark:text-stone-200 hover:bg-stone-100 dark:hover:bg-stone-700">
+    {{template "icon-bell" "h-4 w-4 shrink-0 text-stone-500 dark:text-stone-400"}}
     <span class="truncate">{{.Label}}</span>
   </button>
 </li>

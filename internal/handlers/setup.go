@@ -7,10 +7,12 @@ import (
 	"strings"
 
 	"github.com/andyjessop/todostuff/internal/auth"
+	appmw "github.com/andyjessop/todostuff/internal/middleware"
 )
 
 type setupViewData struct {
 	Title    string
+	Theme    string
 	Subtitle string
 	Email    string
 	Name     string
@@ -29,6 +31,7 @@ func (h *Handlers) SetupPage(w http.ResponseWriter, r *http.Request) {
 	data := setupViewData{
 		Title:    "Create Admin",
 		Subtitle: "Set up the first user for this TodoStuff instance.",
+		Theme:    appmw.ThemeFromContext(r.Context()),
 	}
 	if err := h.Render.Render(w, http.StatusOK, "setup", "auth", data); err != nil {
 		slog.Error("render setup", "err", err)
@@ -51,7 +54,7 @@ func (h *Handlers) SetupSubmit(w http.ResponseWriter, r *http.Request) {
 	name := strings.TrimSpace(r.PostFormValue("name"))
 
 	if msg := validateSetup(email, password, name); msg != "" {
-		h.renderSetupError(w, email, name, msg, http.StatusBadRequest)
+		h.renderSetupError(w, r, email, name, msg, http.StatusBadRequest)
 		return
 	}
 
@@ -63,11 +66,11 @@ func (h *Handlers) SetupSubmit(w http.ResponseWriter, r *http.Request) {
 	})
 	if err != nil {
 		if errors.Is(err, auth.ErrEmailTaken) {
-			h.renderSetupError(w, email, name, "That email is already in use.", http.StatusBadRequest)
+			h.renderSetupError(w, r, email, name, "That email is already in use.", http.StatusBadRequest)
 			return
 		}
 		slog.Error("create admin", "err", err)
-		h.renderSetupError(w, email, name, "Something went wrong. Please try again.", http.StatusInternalServerError)
+		h.renderSetupError(w, r, email, name, "Something went wrong. Please try again.", http.StatusInternalServerError)
 		return
 	}
 
@@ -100,13 +103,14 @@ func (h *Handlers) setupClosed(w http.ResponseWriter, r *http.Request) bool {
 	return true
 }
 
-func (h *Handlers) renderSetupError(w http.ResponseWriter, email, name, msg string, status int) {
+func (h *Handlers) renderSetupError(w http.ResponseWriter, r *http.Request, email, name, msg string, status int) {
 	data := setupViewData{
 		Title:    "Create Admin",
 		Subtitle: "Set up the first user for this TodoStuff instance.",
 		Email:    email,
 		Name:     name,
 		Error:    msg,
+		Theme:    appmw.ThemeFromContext(r.Context()),
 	}
 	if err := h.Render.Render(w, status, "setup", "auth", data); err != nil {
 		slog.Error("render setup", "err", err)

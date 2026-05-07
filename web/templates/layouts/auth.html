@@ -1,25 +1,27 @@
 {{define "auth"}}<!doctype html>
-<html lang="en">
+<html lang="en"{{with .Theme}} data-theme="{{.}}"{{end}}>
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="color-scheme" content="light dark">
   <title>{{.Title}} · TodoStuff</title>
-  <link rel="icon" href="/static/favicon.ico" sizes="any">
-  <link rel="icon" type="image/svg+xml" href="/static/brand/todostuff-icon.svg">
+  <link rel="icon" type="image/svg+xml" href="/static/brand/todostuff-icon.svg" media="(prefers-color-scheme: light)">
+  <link rel="icon" type="image/svg+xml" href="/static/brand/todostuff-icon-monochrome.svg" media="(prefers-color-scheme: dark)">
   <link rel="apple-touch-icon" href="/static/brand/apple-touch-icon.png">
   <link rel="manifest" href="/static/manifest.webmanifest">
-  <meta name="theme-color" content="#efe9de">
+  <meta name="theme-color" content="#efe9de" media="(prefers-color-scheme: light)">
+  <meta name="theme-color" content="#1c1917" media="(prefers-color-scheme: dark)">
   <link rel="stylesheet" href="/static/css/app.css">
 </head>
-<body class="min-h-screen bg-stone-50 text-stone-900 antialiased flex items-center justify-center px-4">
+<body class="min-h-screen bg-stone-50 dark:bg-stone-900 text-stone-900 dark:text-stone-200 antialiased flex items-center justify-center px-4">
   <div id="htmx-progress" aria-hidden="true"></div>
   <main class="w-full max-w-sm">
     <div class="text-center mb-8">
       <img src="/static/brand/todostuff-icon-128.png" alt="" width="56" height="56" class="mx-auto h-14 w-14 rounded-xl shadow-sm">
       <h1 class="mt-4 text-2xl font-semibold tracking-tight">{{.Title}}</h1>
-      {{with .Subtitle}}<p class="mt-1 text-sm text-stone-500">{{.}}</p>{{end}}
+      {{with .Subtitle}}<p class="mt-1 text-sm text-stone-500 dark:text-stone-400">{{.}}</p>{{end}}
     </div>
-    <div class="rounded-2xl border border-stone-200 bg-white p-6 shadow-sm">
+    <div class="rounded-2xl border border-stone-200 dark:border-stone-700 bg-white dark:bg-stone-800 p-6 shadow-sm">
       {{template "auth-content" .}}
     </div>
   </main>
