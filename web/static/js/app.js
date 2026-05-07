@@ -739,7 +739,12 @@
       if (zone.dataset.sortableInit === '1') return;
       zone.dataset.sortableInit = '1';
       Sortable.create(zone, {
-        group: { name: 'tasks-and-projects', pull: false, put: true },
+        // put: ['tasks-and-projects'] (allowlist by group name) — NOT
+        // put: true (accept anything). The zone lives on a project row, which
+        // is also draggable as part of #project-list (group 'projects'); a
+        // boolean put would let a reordering project row land inside another
+        // row's drop zone and disappear from the flat list until refresh.
+        group: { name: 'tasks-and-projects', pull: false, put: ['tasks-and-projects'] },
         // sort:false + draggable selector that matches nothing here keeps the
         // row's own children (drag handle, link) immobile. The zone only
         // exists to receive task drops.
