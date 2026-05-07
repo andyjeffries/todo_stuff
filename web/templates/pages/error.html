@@ -1,0 +1,18 @@
+{{/*
+  error — rendered for 404 / 405 / 500 (anything where we'd otherwise leak
+  a stdlib http.Error string). Uses the auth layout because it works whether
+  or not the user is logged in (no sidebar required).
+
+  Data shape: { Title string, Subtitle string, Status int, Message string }
+*/}}
+{{define "auth-content"}}
+<div class="text-center space-y-2">
+  <p class="text-5xl font-semibold tracking-tight text-stone-900">{{.Status}}</p>
+  <p class="text-base text-stone-700">{{.Message}}</p>
+  <p class="pt-4">
+    <a href="/" class="inline-block rounded-md bg-amber-400 px-4 py-2 text-sm font-medium text-stone-900 hover:bg-amber-500">
+      Back to TodoStuff
+    </a>
+  </p>
+</div>
+{{end}}

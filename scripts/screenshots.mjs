@@ -76,6 +76,15 @@ await dp.waitForSelector('#quick-add-input:focus');
 await dp.fill('#quick-add-input', 'Book the Edinburgh trip');
 await shoot(dp, 'quick-add.png');
 
+// shortcuts cheatsheet: open via the sidebar's `?` button (more reliable
+// across keyboard layouts than synthesising the Shift+/ keypress).
+await dp.keyboard.press('Escape'); // dismiss quick-add first
+await dp.waitForTimeout(300);
+await dp.click('button[data-shortcuts-open]');
+await dp.waitForSelector('#shortcuts-modal[aria-hidden="false"]');
+await dp.waitForTimeout(300);
+await shoot(dp, 'shortcuts.png');
+
 await desktop.close();
 
 // ---------- Mobile ----------

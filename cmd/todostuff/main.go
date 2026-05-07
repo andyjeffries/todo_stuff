@@ -68,8 +68,10 @@ func main() {
 	r.Use(middleware.RequestID)
 	r.Use(middleware.RealIP)
 	r.Use(middleware.Logger)
-	r.Use(middleware.Recoverer)
+	r.Use(appmw.Recover(h.InternalError))
 	r.Use(appmw.AllowHead)
+	r.NotFound(h.NotFound)
+	r.MethodNotAllowed(h.MethodNotAllowed)
 
 	// Public
 	r.Get("/health", handlers.Health)

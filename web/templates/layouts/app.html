@@ -17,6 +17,7 @@
   <link rel="stylesheet" href="/static/css/app.css">
 </head>
 <body data-app-shell class="h-full bg-stone-50 text-stone-900 antialiased">
+  <div id="htmx-progress" aria-hidden="true"></div>
   <div class="flex h-screen overflow-hidden">
     {{template "sidebar" .}}
 
@@ -59,6 +60,7 @@
 
   {{template "quick-add-modal" .}}
   {{template "notif-blocked-modal" .}}
+  {{template "shortcuts-modal" .}}
 
   <div id="detail-backdrop"
        class="fixed inset-0 z-30 bg-stone-900/20 opacity-0 pointer-events-none transition-opacity duration-300 ease-out"

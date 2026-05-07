@@ -796,6 +796,152 @@
   });
 })();
 
+// Top-of-page progress strip for HTMX requests. Only flips on for requests
+// that take >250ms — sub-perceptual local round-trips don't get any visual
+// noise. Driven by htmx:beforeRequest / htmx:afterRequest events. Multiple
+// concurrent requests are tracked via a counter so the bar stays up until
+// the last one settles.
+(function () {
+  const bar = document.getElementById('htmx-progress');
+  if (!bar || typeof document === 'undefined') return;
+
+  let inflight = 0;
+  let timer = null;
+
+  function show() { bar.classList.add('active'); }
+  function hide() { bar.classList.remove('active'); }
+
+  document.body.addEventListener('htmx:beforeRequest', function () {
+    inflight++;
+    if (timer) return;
+    timer = setTimeout(function () {
+      timer = null;
+      if (inflight > 0) show();
+    }, 250);
+  });
+
+  function settle() {
+    inflight = Math.max(0, inflight - 1);
+    if (inflight > 0) return;
+    if (timer) { clearTimeout(timer); timer = null; }
+    hide();
+  }
+  document.body.addEventListener('htmx:afterRequest', settle);
+  // Network failures / timeouts fire htmx:sendError or htmx:responseError but
+  // not always afterRequest depending on phase, so reset on those too.
+  document.body.addEventListener('htmx:sendError',     settle);
+  document.body.addEventListener('htmx:responseError', settle);
+})();
+
+// Nav shortcuts: t/i/u/a/l navigate the smart lists, 1-9 jump to the nth
+// project, ? opens the cheatsheet. Same skip rules as the `n` handler —
+// modifiers, typing fields, and any open overlay (detail panel /
+// quick-add modal / shortcuts modal) all suppress.
+//
+// We click the matching sidebar link rather than setting window.location so
+// any link-bound handlers still fire (notably the mobile-drawer auto-close).
+(function () {
+  const NAV = { t: '/today', i: '/inbox', u: '/upcoming', a: '/anytime', l: '/logbook' };
+
+  const cheatsheet = document.getElementById('shortcuts-modal');
+  const cheatsheetBackdrop = document.getElementById('shortcuts-backdrop');
+  const SHEET_VISIBLE = ['opacity-100', 'pointer-events-auto', 'scale-100'];
+  const SHEET_HIDDEN  = ['opacity-0', 'pointer-events-none', 'scale-95'];
+
+  function openCheatsheet() {
+    if (!cheatsheet || !cheatsheetBackdrop) return;
+    cheatsheet.classList.remove(...SHEET_HIDDEN);
+    cheatsheet.classList.add(...SHEET_VISIBLE);
+    cheatsheet.setAttribute('aria-hidden', 'false');
+    cheatsheetBackdrop.classList.remove('opacity-0', 'pointer-events-none');
+    cheatsheetBackdrop.classList.add('opacity-100', 'pointer-events-auto');
+  }
+  function closeCheatsheet() {
+    if (!cheatsheet || !cheatsheetBackdrop) return;
+    cheatsheet.classList.remove(...SHEET_VISIBLE);
+    cheatsheet.classList.add(...SHEET_HIDDEN);
+    cheatsheet.setAttribute('aria-hidden', 'true');
+    cheatsheetBackdrop.classList.remove('opacity-100', 'pointer-events-auto');
+    cheatsheetBackdrop.classList.add('opacity-0', 'pointer-events-none');
+  }
+  if (cheatsheetBackdrop) cheatsheetBackdrop.addEventListener('click', closeCheatsheet);
+  document.addEventListener('click', function (e) {
+    if (e.target.closest('[data-shortcuts-close]')) closeCheatsheet();
+    if (e.target.closest('[data-shortcuts-open]'))  openCheatsheet();
+  });
+
+  function isTyping(target) {
+    if (!target) return false;
+    const tag = (target.tagName || '').toLowerCase();
+    if (tag === 'input' || tag === 'textarea' || tag === 'select') return true;
+    return target.isContentEditable === true;
+  }
+
+  function cheatsheetOpen() {
+    return cheatsheet && cheatsheet.getAttribute('aria-hidden') === 'false';
+  }
+
+  function overlayOpen() {
+    const detail = document.getElementById('detail-panel');
+    if (detail && detail.getAttribute('aria-hidden') === 'false') return true;
+    const qa = document.getElementById('quick-add');
+    if (qa && qa.getAttribute('aria-hidden') === 'false') return true;
+    if (cheatsheetOpen()) return true;
+    return false;
+  }
+
+  document.addEventListener('keydown', function (e) {
+    // ? closes itself if open, otherwise opens. Trigger on the literal '?'
+    // (already shift-aware on most layouts). Skip while typing so it doesn't
+    // hijack a real question mark in the middle of editing.
+    if (e.key === '?') {
+      if (isTyping(e.target)) return;
+      // Allow toggle-from-open without the overlayOpen guard below skipping.
+      if (cheatsheetOpen()) {
+        e.preventDefault();
+        closeCheatsheet();
+        return;
+      }
+      // The overlayOpen() check below would suppress, but we want ? to be
+      // available everywhere except when typing — keep it simple.
+      const detail = document.getElementById('detail-panel');
+      const qa = document.getElementById('quick-add');
+      if (detail && detail.getAttribute('aria-hidden') === 'false') return;
+      if (qa && qa.getAttribute('aria-hidden') === 'false') return;
+      e.preventDefault();
+      openCheatsheet();
+      return;
+    }
+
+    if (e.key === 'Escape' && cheatsheetOpen()) {
+      closeCheatsheet();
+      return;
+    }
+
+    if (e.metaKey || e.ctrlKey || e.altKey) return;
+    if (isTyping(e.target)) return;
+    if (overlayOpen()) return;
+
+    const k = e.key.toLowerCase();
+    if (Object.prototype.hasOwnProperty.call(NAV, k)) {
+      const link = document.querySelector(`#sidebar a[href="${NAV[k]}"]`);
+      if (link) {
+        e.preventDefault();
+        link.click();
+      }
+      return;
+    }
+    if (/^[1-9]$/.test(e.key)) {
+      const links = document.querySelectorAll('#project-list a[href^="/projects/"]');
+      const idx = parseInt(e.key, 10) - 1;
+      if (links[idx]) {
+        e.preventDefault();
+        links[idx].click();
+      }
+    }
+  });
+})();
+
 // Project icon picker. Click a [data-icon-id] button → write its ID into the
 // sibling hidden <input data-icon-input> and toggle the visual selected state
 // across the picker's buttons. Selected styling lives in classes that mirror

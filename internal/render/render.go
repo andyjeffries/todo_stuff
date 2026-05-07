@@ -108,6 +108,12 @@ var funcMap = template.FuncMap{
 	// dict builds a map[string]any from alternating key/value pairs, so
 	// templates can pass multi-field data when invoking sub-templates.
 	"dict": dictFunc,
+	// add returns a+b. Used to convert range's 0-based index into a 1-based
+	// position for shortcut-key badges.
+	"add": func(a, b int) int { return a + b },
+	// list builds a []any from its arguments. Used by the shortcuts-modal
+	// to pass key sequences ("1", "–", "9") to the row template.
+	"list": func(items ...any) []any { return items },
 }
 
 // startOfDay returns midnight in t's own location. Day comparisons must

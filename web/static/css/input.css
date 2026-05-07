@@ -23,6 +23,30 @@
   transition: opacity 300ms ease, transform 300ms ease;
 }
 
+/* Top-of-page progress strip. Only fades in when an HTMX request has been
+   in-flight for >250ms (see app.js htmx-progress wiring) — fast requests
+   don't get any indicator at all, which is the right thing locally. */
+#htmx-progress {
+  position: fixed; top: 0; left: 0; right: 0;
+  height: 2px;
+  z-index: 100;
+  pointer-events: none;
+  overflow: hidden;
+  opacity: 0;
+  transition: opacity 150ms ease-out;
+}
+#htmx-progress.active { opacity: 1; }
+#htmx-progress::after {
+  content: "";
+  position: absolute; inset: 0;
+  background: linear-gradient(90deg, transparent 0%, #9bbca5 50%, transparent 100%);
+  animation: htmx-progress 1s linear infinite;
+}
+@keyframes htmx-progress {
+  0%   { transform: translateX(-100%); }
+  100% { transform: translateX(100%); }
+}
+
 /* SortableJS drag visuals. SortableJS adds these class names during a drag;
    class option values are passed straight to classList.add(), which throws on
    space-separated strings — so each is one class and the styling lives here. */

@@ -1,0 +1,70 @@
+{{/*
+  shortcuts-modal — opened by pressing `?`, lists every keyboard binding.
+  Mirrors the structure of notif-blocked-modal so app.js can wire it with
+  the same backdrop / dialog / Escape patterns.
+*/}}
+{{define "shortcuts-modal"}}
+<div id="shortcuts-backdrop"
+     class="fixed inset-0 z-50 bg-stone-900/30 opacity-0 pointer-events-none transition-opacity duration-200"
+     aria-hidden="true"></div>
+
+<div id="shortcuts-modal"
+     role="dialog"
+     aria-modal="true"
+     aria-labelledby="shortcuts-title"
+     aria-hidden="true"
+     class="fixed left-1/2 top-24 z-[60] w-full max-w-md -translate-x-1/2 scale-95 opacity-0 pointer-events-none transition duration-200">
+  <div class="rounded-2xl bg-white shadow-2xl ring-1 ring-stone-200/70">
+    <div class="flex items-start justify-between px-6 py-4 border-b border-stone-100">
+      <h2 id="shortcuts-title" class="text-base font-semibold text-stone-900">Keyboard shortcuts</h2>
+      <button type="button" data-shortcuts-close
+              aria-label="Close"
+              class="-mr-2 -mt-1 inline-flex h-8 w-8 items-center justify-center rounded-md text-stone-400 hover:bg-stone-100 hover:text-stone-700">
+        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.75" stroke="currentColor" class="h-5 w-5"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18 18 6M6 6l12 12"/></svg>
+      </button>
+    </div>
+    <div class="px-6 py-5 space-y-5 text-sm">
+      <section>
+        <h3 class="text-[11px] uppercase tracking-wider text-stone-500 mb-2">Navigation</h3>
+        <ul class="space-y-1.5">
+          {{template "shortcut-row" (dict "Keys" (list "T") "Label" "Today")}}
+          {{template "shortcut-row" (dict "Keys" (list "I") "Label" "Inbox")}}
+          {{template "shortcut-row" (dict "Keys" (list "U") "Label" "Upcoming")}}
+          {{template "shortcut-row" (dict "Keys" (list "A") "Label" "Anytime")}}
+          {{template "shortcut-row" (dict "Keys" (list "L") "Label" "Logbook")}}
+          {{template "shortcut-row" (dict "Keys" (list "1" "–" "9") "Label" "Jump to nth project")}}
+        </ul>
+      </section>
+      <section>
+        <h3 class="text-[11px] uppercase tracking-wider text-stone-500 mb-2">Actions</h3>
+        <ul class="space-y-1.5">
+          {{template "shortcut-row" (dict "Keys" (list "N")   "Label" "New task (quick add)")}}
+          {{template "shortcut-row" (dict "Keys" (list "Esc") "Label" "Close panel or modal")}}
+        </ul>
+      </section>
+      <section>
+        <h3 class="text-[11px] uppercase tracking-wider text-stone-500 mb-2">Help</h3>
+        <ul class="space-y-1.5">
+          {{template "shortcut-row" (dict "Keys" (list "?") "Label" "Show this cheatsheet")}}
+        </ul>
+      </section>
+    </div>
+  </div>
+</div>
+{{end}}
+
+{{/* one row inside the cheatsheet — label on the left, keys on the right. */}}
+{{define "shortcut-row"}}
+<li class="flex items-center justify-between gap-4">
+  <span class="text-stone-700">{{.Label}}</span>
+  <span class="flex items-center gap-1">
+    {{range .Keys}}
+      {{if eq . "–"}}
+        <span class="text-stone-400 text-xs">–</span>
+      {{else}}
+        <kbd class="inline-flex h-[20px] min-w-[20px] items-center justify-center rounded border border-stone-200 bg-stone-50 px-1.5 text-[11px] font-mono leading-none text-stone-600 shadow-[inset_0_-1px_0_rgba(0,0,0,0.04)]">{{.}}</kbd>
+      {{end}}
+    {{end}}
+  </span>
+</li>
+{{end}}

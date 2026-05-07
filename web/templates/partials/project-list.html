@@ -9,9 +9,9 @@
 
 {{define "project-list-body"}}
 {{if .Projects}}
-  {{range .Projects}}
-  <div id="project-row-{{.ID}}"
-       data-project-id="{{.ID}}"
+  {{range $i, $p := .Projects}}
+  <div id="project-row-{{$p.ID}}"
+       data-project-id="{{$p.ID}}"
        data-project-drop
        class="group/proj relative flex items-center">
     {{/* Drag handle for SortableJS. Hover-only on ≥sm to keep the sidebar
@@ -23,12 +23,13 @@
                  text-stone-300 hover:text-stone-500 cursor-grab active:cursor-grabbing">
       {{template "icon-grip-vertical" "h-3.5 w-3.5"}}
     </span>
-    <a href="/projects/{{.ID}}"
-       class="flex flex-1 items-center gap-2.5 pl-5 pr-3 py-2 sm:py-1.5 rounded-md text-sm min-w-0 {{if eq $.ActiveProjectID .ID}}bg-amber-100 text-amber-900 font-medium{{else}}text-stone-700 hover:bg-stone-200{{end}}">
+    <a href="/projects/{{$p.ID}}"
+       class="flex flex-1 items-center gap-2.5 pl-5 pr-3 py-2 sm:py-1.5 rounded-md text-sm min-w-0 {{if eq $.ActiveProjectID $p.ID}}bg-amber-100 text-amber-900 font-medium{{else}}text-stone-700 hover:bg-stone-200{{end}}">
       <span class="inline-flex h-4 w-4 shrink-0 items-center justify-center">
-        {{template "project-icon" (dict "Name" .Icon.String "Class" "h-4 w-4")}}
+        {{template "project-icon" (dict "Name" $p.Icon.String "Class" "h-4 w-4")}}
       </span>
-      <span class="truncate">{{.Name}}</span>
+      <span class="truncate">{{$p.Name}}</span>
+      {{if lt $i 9}}{{template "kbd-badge" (add $i 1)}}{{end}}
     </a>
   </div>
   {{end}}
