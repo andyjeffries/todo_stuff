@@ -440,11 +440,15 @@ func (t *Tasks) PopDueReminders(ctx context.Context, userID string) ([]DueRemind
 
 // DuePushoverReminder is what the background dispatcher needs to fire one
 // Pushover message: the task identity for delivery tracking, the title +
-// notes for the message body, and the user's Pushover user key.
+// project + due date/time for the message body, and the user's Pushover
+// user key. Notes are deliberately omitted — Pushover requires a non-empty
+// message and tasks without notes used to be silently dropped.
 type DuePushoverReminder struct {
 	TaskID          string
 	Title           string
-	Notes           string
+	DueDate         sql.NullTime
+	DueTime         sql.NullString
+	Project         string // empty when the task is in the inbox
 	PushoverUserKey string
 }
 
@@ -479,7 +483,7 @@ func (t *Tasks) PopDuePushoverReminders(ctx context.Context) ([]DuePushoverRemin
                   AND pushover_user_key IS NOT NULL
                   AND TRIM(pushover_user_key) <> ''
            )
-        RETURNING id, user_id, title, notes`,
+        RETURNING id, user_id, title, due_date, due_time, project_id`,
 		now, now,
 	)
 	if err != nil {
@@ -488,19 +492,19 @@ func (t *Tasks) PopDuePushoverReminders(ctx context.Context) ([]DuePushoverRemin
 	defer rows.Close()
 
 	type claimed struct {
-		id     string
-		userID string
-		title  string
-		notes  string
+		id        string
+		userID    string
+		title     string
+		dueDate   sql.NullTime
+		dueTime   sql.NullString
+		projectID sql.NullString
 	}
 	var claims []claimed
 	for rows.Next() {
 		var c claimed
-		var notes sql.NullString
-		if err := rows.Scan(&c.id, &c.userID, &c.title, &notes); err != nil {
+		if err := rows.Scan(&c.id, &c.userID, &c.title, &c.dueDate, &c.dueTime, &c.projectID); err != nil {
 			return nil, fmt.Errorf("scan claimed reminder: %w", err)
 		}
-		c.notes = notes.String
 		claims = append(claims, c)
 	}
 	if err := rows.Err(); err != nil {
@@ -510,9 +514,10 @@ func (t *Tasks) PopDuePushoverReminders(ctx context.Context) ([]DuePushoverRemin
 		return nil, nil
 	}
 
-	// Resolve each user's pushover_user_key. With small claim sizes (one tick,
-	// one user usually) this is fine as N+1 — the dispatcher already iterates
-	// per-row to send. If it ever gets noisy we can switch to IN(?,?,?…).
+	// Resolve each user's pushover_user_key (and project name when set). With
+	// small claim sizes (one tick, one user usually) this is fine as N+1 —
+	// the dispatcher already iterates per-row to send. If it ever gets noisy
+	// we can switch to IN(?,?,?…).
 	out := make([]DuePushoverReminder, 0, len(claims))
 	for _, c := range claims {
 		var key sql.NullString
@@ -524,10 +529,21 @@ func (t *Tasks) PopDuePushoverReminders(ctx context.Context) ([]DuePushoverRemin
 			// (The reminder stays marked delivered; that's fine, the user is gone.)
 			continue
 		}
+		var project string
+		if c.projectID.Valid {
+			var name sql.NullString
+			if err := t.db.QueryRowContext(ctx,
+				`SELECT name FROM projects WHERE id = ?`, c.projectID.String,
+			).Scan(&name); err == nil {
+				project = name.String
+			}
+		}
 		out = append(out, DuePushoverReminder{
 			TaskID:          c.id,
 			Title:           c.title,
-			Notes:           c.notes,
+			DueDate:         c.dueDate,
+			DueTime:         c.dueTime,
+			Project:         project,
 			PushoverUserKey: key.String,
 		})
 	}

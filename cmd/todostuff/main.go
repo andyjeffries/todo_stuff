@@ -8,6 +8,7 @@ import (
 	"os"
 	"os/signal"
 	"strconv"
+	"strings"
 	"syscall"
 	"time"
 
@@ -207,12 +208,32 @@ func dispatchOnce(ctx context.Context, tasks *services.Tasks, push *notification
 		err := push.Send(ctx, notifications.SendParams{
 			UserKey: r.PushoverUserKey,
 			Title:   r.Title,
-			Message: r.Notes,
+			Message: pushoverMessage(r),
 		})
 		if err != nil {
 			logger.Warn("pushover send", "task_id", r.TaskID, "err", err)
 		}
 	}
+}
+
+// pushoverMessage builds the body for a reminder push: due date/time and
+// project, one per line. Pushover rejects an empty `message`, so we fall
+// back to the title if a task somehow has neither (shouldn't happen — a
+// reminder requires both due_date and due_time — but cheap insurance).
+func pushoverMessage(r services.DuePushoverReminder) string {
+	var lines []string
+	if r.DueDate.Valid && r.DueTime.Valid {
+		lines = append(lines, "Due "+r.DueDate.Time.Format("Mon 2 Jan")+" at "+r.DueTime.String)
+	} else if r.DueDate.Valid {
+		lines = append(lines, "Due "+r.DueDate.Time.Format("Mon 2 Jan"))
+	}
+	if r.Project != "" {
+		lines = append(lines, "Project: "+r.Project)
+	}
+	if len(lines) == 0 {
+		return r.Title
+	}
+	return strings.Join(lines, "\n")
 }
 
 func envOr(key, def string) string {
