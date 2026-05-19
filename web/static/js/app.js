@@ -787,6 +787,26 @@
   });
 })();
 
+// Periodic auto-refresh of the active task list. Fires every 5 minutes so
+// stale views (e.g. Today left open overnight) pick up new or rescheduled
+// tasks without a manual reload. Skips the fetch if no #task-list is present
+// (e.g. Logbook, settings pages) or if htmx isn't loaded yet.
+(function () {
+  var REFRESH_MS = 5 * 60 * 1000;
+  setInterval(function () {
+    if (!document.getElementById('task-list') || typeof htmx === 'undefined') return;
+    var detail = document.getElementById('detail-panel');
+    if (detail && detail.getAttribute('aria-hidden') === 'false') return;
+    var quickAdd = document.getElementById('quick-add');
+    if (quickAdd && quickAdd.getAttribute('aria-hidden') === 'false') return;
+    htmx.ajax('GET', window.location.pathname, {
+      target: '#task-list',
+      swap: 'outerHTML',
+      select: '#task-list',
+    });
+  }, REFRESH_MS);
+})();
+
 // Keyboard shortcuts:
 //   n      — open quick-add modal (skip when typing in an input)
 //   Esc    — handled per-overlay above (detail, sidebar, modal, listbox)
