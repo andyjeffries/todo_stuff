@@ -286,6 +286,10 @@
     modal.setAttribute('aria-hidden', 'true');
     backdrop.classList.remove('opacity-100', 'pointer-events-auto');
     backdrop.classList.add('opacity-0', 'pointer-events-none');
+    // Release focus — the input is now visually hidden but still in the DOM,
+    // so without this it keeps capturing every keystroke (including `/`, which
+    // then can't re-open search because its handler ignores keys typed into an input).
+    input.blur();
   }
 
   function isOpen() { return modal.getAttribute('aria-hidden') === 'false'; }
