@@ -183,6 +183,53 @@ func (t *Tasks) ListByView(ctx context.Context, userID string, view View) ([]mod
 	return out, rows.Err()
 }
 
+// Search returns tasks whose title or notes contain the query as a literal
+// (case-insensitive) substring — for the global search overlay. Incomplete
+// tasks rank before completed ones, then most-recently-updated first. The join
+// in taskSelect means each result already carries its project name/icon.
+//
+// LIKE wildcards (% and _) in the user's input are escaped so they match
+// literally rather than acting as patterns.
+func (t *Tasks) Search(ctx context.Context, userID, query string, limit int) ([]models.Task, error) {
+	query = strings.TrimSpace(query)
+	if query == "" {
+		return nil, nil
+	}
+	if limit <= 0 {
+		limit = 20
+	}
+	like := "%" + escapeLike(query) + "%"
+	rows, err := t.db.QueryContext(ctx,
+		taskSelect+`
+         WHERE t.user_id = ?
+           AND (t.title LIKE ? ESCAPE '\' OR t.notes LIKE ? ESCAPE '\')
+         ORDER BY (t.completed_at IS NOT NULL), t.updated_at DESC
+         LIMIT ?`,
+		userID, like, like, limit,
+	)
+	if err != nil {
+		return nil, fmt.Errorf("search tasks: %w", err)
+	}
+	defer rows.Close()
+
+	var out []models.Task
+	for rows.Next() {
+		task, err := scanTask(rows)
+		if err != nil {
+			return nil, err
+		}
+		out = append(out, *task)
+	}
+	return out, rows.Err()
+}
+
+// escapeLike neutralises SQLite LIKE metacharacters so a user's search string
+// matches literally. Pairs with `ESCAPE '\'` in the query. The backslash must
+// be escaped first, otherwise it would double-escape the escapes it inserts.
+func escapeLike(s string) string {
+	return strings.NewReplacer(`\`, `\\`, `%`, `\%`, `_`, `\_`).Replace(s)
+}
+
 // viewQuery returns the WHERE clause, ORDER BY clause, and args for a view.
 // Column references must qualify with `t.` because taskSelect joins the
 // projects table.

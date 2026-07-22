@@ -65,6 +65,10 @@
 {{- else if eq $n "computer-desktop"  }}{{template "icon-computer-desktop" $cls}}
 {{- else if eq $n "shield-check"      }}{{template "icon-shield-check" $cls}}
 {{- else if eq $n "sun"               }}{{template "icon-sun" $cls}}
+{{- else if eq $n "dog"               }}{{template "icon-dog" $cls}}
+{{- else if eq $n "cat"               }}{{template "icon-cat" $cls}}
+{{- else if eq $n "bird"              }}{{template "icon-bird" $cls}}
+{{- else if eq $n "reptile"           }}{{template "icon-reptile" $cls}}
 {{- else                      }}{{template "icon-folder" $cls}}
 {{- end -}}
 {{end}}
@@ -127,6 +131,11 @@
   {{template "project-icon-button" (dict "ID" "computer-desktop"  "Selected" $selected)}}
   {{template "project-icon-button" (dict "ID" "shield-check"      "Selected" $selected)}}
   {{template "project-icon-button" (dict "ID" "sun"               "Selected" $selected)}}
+  {{/* M20 additions — pets. */}}
+  {{template "project-icon-button" (dict "ID" "dog"               "Selected" $selected)}}
+  {{template "project-icon-button" (dict "ID" "cat"               "Selected" $selected)}}
+  {{template "project-icon-button" (dict "ID" "bird"              "Selected" $selected)}}
+  {{template "project-icon-button" (dict "ID" "reptile"           "Selected" $selected)}}
 </div>
 {{end}}
 

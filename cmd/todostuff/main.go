@@ -106,6 +106,7 @@ func main() {
 		pr.Post("/tasks/{id}/uncomplete", h.TaskUncomplete)
 
 		pr.Get("/api/reminders/due", h.RemindersDue)
+		pr.Get("/api/search", h.Search)
 
 		pr.Post("/projects", h.ProjectCreate)
 		pr.Post("/projects/reorder", h.ProjectReorder)

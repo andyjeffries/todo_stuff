@@ -47,6 +47,16 @@
   </div>
 
   <nav class="flex-1 overflow-y-auto px-2 pb-4 space-y-0.5">
+    {{/* Global search. Opens the search overlay (app.js); data-sidebar-close
+         also dismisses the mobile drawer (a no-op on desktop, same trick the
+         nav links use). Keyboard shortcut: `/`. */}}
+    <button type="button" data-search-open data-sidebar-close
+            class="mt-1 mb-1 flex w-full items-center gap-2.5 rounded-md border border-stone-200 dark:border-stone-700 bg-white/60 dark:bg-stone-800/50 px-3 py-2 sm:py-1.5 text-sm text-stone-500 dark:text-stone-400 hover:bg-white dark:hover:bg-stone-800 hover:text-stone-700 dark:hover:text-stone-200">
+      {{template "icon-magnifying-glass" "h-4 w-4 shrink-0"}}
+      <span>Search</span>
+      {{template "kbd-badge" "/"}}
+    </button>
+
     <div class="px-3 pt-3 pb-1 text-[11px] uppercase tracking-wider text-stone-500 dark:text-stone-400">Lists</div>
 
     <a href="/today" class="flex items-center gap-2.5 px-3 py-2 sm:py-1.5 rounded-md text-sm {{if eq .ActiveView "today"}}bg-amber-100 dark:bg-amber-900/30 text-amber-900 dark:text-amber-100 font-medium{{else}}text-stone-700 dark:text-stone-300 hover:bg-stone-200 dark:hover:bg-stone-700{{end}}">

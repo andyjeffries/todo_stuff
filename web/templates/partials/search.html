@@ -1,0 +1,85 @@
+{{/*
+  search-modal — global task search overlay.
+
+  Opened by the sidebar "Search" button ([data-search-open]) or the `/` key.
+  The input GETs /api/search as you type (debounced) and swaps the rendered
+  results into #search-results. app.js handles keyboard nav (↑/↓ + Enter) and,
+  on activating a result, closes the overlay and pops the task into the
+  right-hand detail slide-over — reusing the same flow as a reminder click.
+*/}}
+
+{{define "search-modal"}}
+<div id="search-backdrop"
+     class="fixed inset-0 z-50 bg-stone-900/30 dark:bg-black/60 opacity-0 pointer-events-none transition-opacity duration-200"
+     aria-hidden="true"></div>
+
+<div id="search-modal"
+     role="dialog"
+     aria-modal="true"
+     aria-label="Search tasks"
+     aria-hidden="true"
+     class="fixed left-1/2 top-24 z-[60] w-full max-w-lg -translate-x-1/2 scale-95 opacity-0 pointer-events-none transition duration-200 px-4 sm:px-0">
+  <div class="overflow-hidden rounded-2xl bg-white dark:bg-stone-800 shadow-2xl ring-1 ring-stone-200/70 dark:ring-stone-700/70">
+    <div class="flex items-center gap-3 border-b border-stone-100 dark:border-stone-700 px-4 py-3">
+      {{template "icon-magnifying-glass" "h-5 w-5 shrink-0 text-stone-400 dark:text-stone-500"}}
+      <input id="search-input" type="text" name="q" autocomplete="off" role="combobox" aria-expanded="true" aria-controls="search-results"
+             placeholder="Search tasks…"
+             hx-get="/api/search"
+             hx-trigger="input changed delay:200ms"
+             hx-target="#search-results"
+             hx-swap="innerHTML"
+             class="min-w-0 flex-1 bg-transparent text-base text-stone-800 dark:text-stone-100 placeholder-stone-400 dark:placeholder-stone-500 focus:outline-none">
+      <kbd class="hidden sm:inline-flex rounded bg-stone-100 dark:bg-stone-700 px-1.5 py-0.5 font-mono text-[10px] text-stone-500 dark:text-stone-400">Esc</kbd>
+    </div>
+    <div id="search-results" class="max-h-80 overflow-y-auto" role="listbox">
+      <p class="px-4 py-6 text-center text-sm text-stone-400 dark:text-stone-500">Type to search your tasks.</p>
+    </div>
+  </div>
+</div>
+{{end}}
+
+
+{{/*
+  search-results — the fragment GET /api/search returns.
+  Data shape: { Query string, Tasks []models.Task }.
+*/}}
+{{define "search-results"}}
+{{- if eq (len .Query) 0}}
+<p class="px-4 py-6 text-center text-sm text-stone-400 dark:text-stone-500">Type to search your tasks.</p>
+{{- else if eq (len .Tasks) 0}}
+<p class="px-4 py-6 text-center text-sm text-stone-400 dark:text-stone-500">No tasks match “{{.Query}}”.</p>
+{{- else}}
+<ul class="py-1">
+  {{range .Tasks}}
+  <li>
+    <button type="button" data-search-result data-task-id="{{.ID}}" role="option"
+            class="flex w-full items-start gap-2.5 px-4 py-2 text-left hover:bg-stone-100 dark:hover:bg-stone-700">
+      <span class="mt-0.5 inline-flex h-4 w-4 shrink-0 items-center justify-center rounded-full border-2 {{if .CompletedAt.Valid}}border-emerald-400 text-emerald-500{{else}}border-stone-300 dark:border-stone-600{{end}}">
+        {{if .CompletedAt.Valid}}<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" class="h-2.5 w-2.5"><path fill-rule="evenodd" d="M16.704 4.153a.75.75 0 0 1 .143 1.052l-8 10.5a.75.75 0 0 1-1.127.075l-4.5-4.5a.75.75 0 0 1 1.06-1.06l3.894 3.893 7.48-9.817a.75.75 0 0 1 1.05-.143Z" clip-rule="evenodd"/></svg>{{end}}
+      </span>
+      <span class="min-w-0 flex-1">
+        <span class="block truncate text-sm {{if .CompletedAt.Valid}}text-stone-400 dark:text-stone-500 line-through{{else}}text-stone-800 dark:text-stone-200{{end}}">{{.Title}}</span>
+        {{$showProject := .ProjectName.Valid}}
+        {{if or .DueDate.Valid $showProject}}
+        <span class="mt-0.5 flex items-center gap-2 text-xs text-stone-400 dark:text-stone-500">
+          {{if .DueDate.Valid}}
+          <span class="inline-flex items-center gap-1">
+            {{template "icon-calendar" "h-3 w-3 shrink-0"}}
+            {{formatDueDate .DueDate.Time}}{{if .DueTime.Valid}} · {{formatTime .DueTime.String}}{{end}}
+          </span>
+          {{end}}
+          {{if $showProject}}
+          <span class="inline-flex items-center gap-1 min-w-0">
+            {{template "project-icon" (dict "Name" .ProjectIcon.String "Class" "h-3 w-3 shrink-0")}}
+            <span class="truncate">{{.ProjectName.String}}</span>
+          </span>
+          {{end}}
+        </span>
+        {{end}}
+      </span>
+    </button>
+  </li>
+  {{end}}
+</ul>
+{{- end}}
+{{end}}

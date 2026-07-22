@@ -252,6 +252,127 @@
   window.TodoStuff.closeQuickAdd = close;
 })();
 
+// Global task search overlay. Opened by any [data-search-open] click (the
+// sidebar "Search" button) or the `/` key. The input GETs /api/search via HTMX
+// as the user types; this module owns keyboard navigation over the swapped-in
+// results and the "activate → open detail panel" flow.
+//
+// Activating a result (Enter on the highlighted row, or a click) mirrors the
+// reminder-notification path: htmx-load the task detail into the slide-over,
+// open it, and dismiss the search overlay.
+(function () {
+  const modal = document.getElementById('search-modal');
+  const backdrop = document.getElementById('search-backdrop');
+  const input = document.getElementById('search-input');
+  const results = document.getElementById('search-results');
+  if (!modal || !backdrop || !input || !results) return;
+
+  const VISIBLE = ['opacity-100', 'pointer-events-auto', 'scale-100'];
+  const HIDDEN = ['opacity-0', 'pointer-events-none', 'scale-95'];
+  const ACTIVE = ['bg-stone-100', 'dark:bg-stone-700'];
+
+  function open() {
+    modal.classList.remove(...HIDDEN);
+    modal.classList.add(...VISIBLE);
+    modal.setAttribute('aria-hidden', 'false');
+    backdrop.classList.remove('opacity-0', 'pointer-events-none');
+    backdrop.classList.add('opacity-100', 'pointer-events-auto');
+    setTimeout(function () { input.focus(); input.select(); }, 50);
+  }
+
+  function close() {
+    modal.classList.remove(...VISIBLE);
+    modal.classList.add(...HIDDEN);
+    modal.setAttribute('aria-hidden', 'true');
+    backdrop.classList.remove('opacity-100', 'pointer-events-auto');
+    backdrop.classList.add('opacity-0', 'pointer-events-none');
+  }
+
+  function isOpen() { return modal.getAttribute('aria-hidden') === 'false'; }
+
+  function items() {
+    return Array.from(results.querySelectorAll('[data-search-result]'));
+  }
+  function activeItem() {
+    return results.querySelector('[data-search-result][data-active]');
+  }
+  function setActive(el) {
+    items().forEach(function (i) {
+      i.removeAttribute('data-active');
+      i.classList.remove(...ACTIVE);
+    });
+    if (el) {
+      el.setAttribute('data-active', '');
+      el.classList.add(...ACTIVE);
+      el.scrollIntoView({ block: 'nearest' });
+    }
+  }
+  function move(dir) {
+    const list = items();
+    if (!list.length) return;
+    let idx = list.indexOf(activeItem());
+    idx = idx < 0 ? (dir > 0 ? 0 : list.length - 1) : idx + dir;
+    if (idx < 0) idx = list.length - 1;
+    if (idx >= list.length) idx = 0;
+    setActive(list[idx]);
+  }
+  function activate(el) {
+    el = el || activeItem() || items()[0];
+    if (!el) return;
+    const id = el.dataset.taskId;
+    if (!id || typeof htmx === 'undefined') return;
+    htmx.ajax('GET', '/tasks/' + id, {
+      target: '#detail-panel-body',
+      swap: 'innerHTML',
+    }).then(function () {
+      if (window.TodoStuff && window.TodoStuff.openDetail) window.TodoStuff.openDetail();
+    });
+    close();
+  }
+
+  document.addEventListener('click', function (e) {
+    if (e.target.closest('[data-search-open]')) { e.preventDefault(); open(); }
+  });
+  backdrop.addEventListener('click', close);
+
+  // Highlight the first row whenever fresh results land.
+  results.addEventListener('htmx:afterSwap', function () {
+    setActive(items()[0] || null);
+  });
+
+  results.addEventListener('click', function (e) {
+    const el = e.target.closest('[data-search-result]');
+    if (!el) return;
+    e.preventDefault();
+    activate(el);
+  });
+
+  // Navigation + activation keys while the input is focused.
+  input.addEventListener('keydown', function (e) {
+    if (e.key === 'ArrowDown') { e.preventDefault(); move(1); }
+    else if (e.key === 'ArrowUp') { e.preventDefault(); move(-1); }
+    else if (e.key === 'Enter') { e.preventDefault(); activate(); }
+  });
+
+  document.addEventListener('keydown', function (e) {
+    if (e.key === 'Escape' && isOpen()) { close(); return; }
+    // `/` opens search from anywhere — but not while typing (so a literal
+    // slash in a task title / the search box itself is left alone).
+    if (e.key === '/') {
+      const t = e.target;
+      const tag = (t.tagName || '').toLowerCase();
+      if (tag === 'input' || tag === 'textarea' || tag === 'select' || t.isContentEditable) return;
+      if (isOpen()) return;
+      e.preventDefault();
+      open();
+    }
+  });
+
+  window.TodoStuff = window.TodoStuff || {};
+  window.TodoStuff.openSearch = open;
+  window.TodoStuff.closeSearch = close;
+})();
+
 // Due-date quick chips in the task detail panel. Click "Today" / "Tomorrow" /
 // "Next week" → set the date input; "Clear" → empty both date and time. After
 // updating the inputs, dispatch a `change` event so the form's existing

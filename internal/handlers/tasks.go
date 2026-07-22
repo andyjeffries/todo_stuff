@@ -190,6 +190,37 @@ func (h *Handlers) TaskDetail(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
+// searchResultsData is the shape the search-results partial expects: the
+// (trimmed) query echoed back for the empty/no-match copy, plus the matches.
+type searchResultsData struct {
+	Query string
+	Tasks []models.Task
+}
+
+// Search handles GET /api/search?q=…. Returns the search-results partial for
+// swapping into the search overlay's results container. An empty query renders
+// the partial with no tasks (the partial shows a "type to search" hint).
+func (h *Handlers) Search(w http.ResponseWriter, r *http.Request) {
+	user, _ := auth.UserFromContext(r.Context())
+	q := strings.TrimSpace(r.URL.Query().Get("q"))
+
+	var tasks []models.Task
+	if q != "" {
+		var err error
+		tasks, err = h.Tasks.Search(r.Context(), user.ID, q, 20)
+		if err != nil {
+			slog.Error("search tasks", "err", err)
+			http.Error(w, "internal error", http.StatusInternalServerError)
+			return
+		}
+	}
+
+	data := searchResultsData{Query: q, Tasks: tasks}
+	if err := h.Render.Render(w, http.StatusOK, "today", "search-results", data); err != nil {
+		slog.Error("render search-results", "err", err)
+	}
+}
+
 // TaskUpdate handles PUT /tasks/{id}. Only fields actually present in the
 // form are touched; missing fields are left alone.
 func (h *Handlers) TaskUpdate(w http.ResponseWriter, r *http.Request) {
