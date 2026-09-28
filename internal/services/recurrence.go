@@ -46,6 +46,11 @@ func (p *RecurrenceParams) normalize() error {
 	return nil
 }
 
+// Validate reports whether the params would be accepted by
+// SetRecurrenceForTask, without mutating them. Lets callers reject bad input
+// before writing anything else.
+func (p RecurrenceParams) Validate() error { return p.normalize() }
+
 // SetRecurrenceForTask is the unified entry point used by the handler form.
 // Behaviour:
 //
@@ -120,6 +125,14 @@ func (t *Tasks) updateRule(ctx context.Context, userID string, task *models.Task
 	)
 	if err != nil {
 		return fmt.Errorf("update recurrence rule: %w", err)
+	}
+	// Bump the task too: its schedule changed, and API clients detect changes
+	// via tasks.updated_at (see SyncToken).
+	if _, err := t.db.ExecContext(ctx,
+		`UPDATE tasks SET updated_at = ? WHERE id = ? AND user_id = ?`,
+		t.now(), task.ID, userID,
+	); err != nil {
+		return fmt.Errorf("touch recurring task: %w", err)
 	}
 	return nil
 }

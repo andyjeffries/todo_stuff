@@ -31,6 +31,7 @@ What's working today:
 - **Docker image** published to GHCR (`ghcr.io/andyjeffries/todo_stuff`) on every push to `master`, with a [`docker-compose.yml`](docker-compose.yml) for one-command self-hosting.
 - **Responsive layout** — sidebar collapses to an off-canvas drawer on phones, with a hamburger-toggled top bar; tablet and desktop keep the sidebar in flow. Detail panel is full-screen on phones, modal-width on everything ≥sm. Tap targets bumped on mobile only (no visual change at desktop).
 - **Drag-and-drop reordering** for tasks and projects, powered by [SortableJS](https://github.com/SortableJS/Sortable) (vendored). A subtle grip handle surfaces on row hover (always visible on touch); long-press to start a drag on phones, instant on desktop. The relative order *within* the dragged set persists; tasks elsewhere keep their positions.
+- **JSON API** at `/api/v1` with Bearer-token auth, covering everything the web client does (tasks, projects, smart lists, search, reminders, profile, admin) plus a cheap change-detection token — enough to build a native client with real desktop notifications. See [`docs/API.md`](docs/API.md).
 - **Keyboard shortcuts** — `t` / `i` / `u` / `a` / `l` jump to Today / Inbox / Upcoming / Anytime / Logbook; `1`–`9` jump to the nth project; `n` opens quick-add from anywhere; `Enter` saves the focused form; `Esc` closes whatever overlay is open. Press `?` for the full cheatsheet — every sidebar row shows its key in a subtle right-aligned badge so the bindings are discoverable at a glance.
 
 ### Detail panel

@@ -83,6 +83,10 @@ func main() {
 	r.Get("/login", h.LoginPage)
 	r.Post("/login", h.LoginSubmit)
 
+	// JSON API for native clients (docs/API.md). Bearer-token auth; mounted
+	// outside the cookie-protected group because it handles its own auth.
+	r.Mount("/api/v1", h.APIRouter())
+
 	// Static
 	staticFS := http.FileServer(http.Dir("./web/static"))
 	r.Handle("/static/*", http.StripPrefix("/static/", staticFS))

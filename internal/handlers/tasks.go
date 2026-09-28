@@ -291,8 +291,7 @@ func (h *Handlers) TaskUpdate(w http.ResponseWriter, r *http.Request) {
 			patch.ReminderAt = &sql.NullTime{}
 			patch.ReminderOffsetMinutes = &sql.NullInt64{}
 		} else if minutes, ok := parseReminderOffset(offsetRaw); ok {
-			if dueAt, err := time.ParseInLocation("2006-01-02 15:04", dueDateRaw+" "+dueTimeRaw, time.Local); err == nil {
-				reminderAt := dueAt.Add(-time.Duration(minutes) * time.Minute).UTC()
+			if reminderAt, err := reminderTime(dueDateRaw, dueTimeRaw, minutes); err == nil {
 				patch.ReminderAt = &sql.NullTime{Time: reminderAt, Valid: true}
 				patch.ReminderOffsetMinutes = &sql.NullInt64{Int64: int64(minutes), Valid: true}
 			}
@@ -442,6 +441,17 @@ func (h *Handlers) TaskReorder(w http.ResponseWriter, r *http.Request) {
 var allowedReminderOffsets = map[int]struct{}{
 	0: {}, 5: {}, 10: {}, 15: {}, 30: {}, 60: {},
 	120: {}, 240: {}, 480: {}, 720: {}, 1440: {},
+}
+
+// reminderTime converts a due date ("2006-01-02") and time ("15:04"), read
+// as server-local wall clock, minus the offset into the absolute UTC instant
+// the reminder fires.
+func reminderTime(dueDate, dueTime string, offsetMinutes int) (time.Time, error) {
+	dueAt, err := time.ParseInLocation("2006-01-02 15:04", dueDate+" "+dueTime, time.Local)
+	if err != nil {
+		return time.Time{}, err
+	}
+	return dueAt.Add(-time.Duration(offsetMinutes) * time.Minute).UTC(), nil
 }
 
 func parseReminderOffset(s string) (int, bool) {

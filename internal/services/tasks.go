@@ -686,16 +686,19 @@ func (t *Tasks) Delete(ctx context.Context, userID, id string) error {
 // --------------------------------------------------------------- Helpers ---
 
 // taskSelect joins projects so list rows can show their project's name + icon
-// without a second round-trip. The two trailing columns are nullable —
-// LEFT JOIN means tasks without a project come back with NULL/NULL there.
+// without a second round-trip, and recurrence_rules so a task carries its
+// schedule. The trailing columns are nullable — LEFT JOIN means tasks without
+// a project / rule come back with NULLs there.
 const taskSelect = `
 SELECT t.id, t.user_id, t.project_id, t.title, t.notes, t.notes_html,
        t.is_important, t.due_date, t.due_time,
        t.reminder_at, t.reminder_offset_minutes, t.reminder_sent_at,
        t.completed_at, t.position, t.recurrence_rule_id, t.created_at, t.updated_at,
-       p.name, p.icon
+       p.name, p.icon,
+       r.frequency, r.interval, r.regeneration_type
   FROM tasks t
-  LEFT JOIN projects p ON p.id = t.project_id`
+  LEFT JOIN projects p ON p.id = t.project_id
+  LEFT JOIN recurrence_rules r ON r.id = t.recurrence_rule_id`
 
 type scanner interface {
 	Scan(dest ...any) error
@@ -709,6 +712,7 @@ func scanTask(s scanner) (*models.Task, error) {
 		&t.ReminderAt, &t.ReminderOffsetMinutes, &t.ReminderSentAt,
 		&t.CompletedAt, &t.Position, &t.RecurrenceRuleID, &t.CreatedAt, &t.UpdatedAt,
 		&t.ProjectName, &t.ProjectIcon,
+		&t.RecurrenceFrequency, &t.RecurrenceInterval, &t.RecurrenceType,
 	)
 	if errors.Is(err, sql.ErrNoRows) {
 		return nil, ErrTaskNotFound
