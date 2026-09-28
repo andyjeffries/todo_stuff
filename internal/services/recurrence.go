@@ -258,16 +258,21 @@ func (t *Tasks) regenerateNext(ctx context.Context, prev *models.Task) (*models.
 //	              schedule). Falls back to now if the previous didn't have
 //	              a date.
 //	on_complete — anchor to now (relative to completion).
+//
+// "now" is reduced to the server-local calendar date, stored like every other
+// due date: UTC midnight of that date.
 func computeNextDueDate(rule *models.RecurrenceRule, prev *models.Task, now time.Time) time.Time {
+	y, m, d := now.In(time.Local).Date()
+	today := time.Date(y, m, d, 0, 0, 0, 0, time.UTC)
 	var anchor time.Time
 	switch rule.RegenerationType {
 	case "on_complete":
-		anchor = now
+		anchor = today
 	default: // on_create
 		if prev.DueDate.Valid {
 			anchor = prev.DueDate.Time
 		} else {
-			anchor = now
+			anchor = today
 		}
 	}
 	return addInterval(anchor, rule.Frequency, rule.Interval)

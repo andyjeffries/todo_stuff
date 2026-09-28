@@ -369,7 +369,7 @@ Returns one of the sidebar's smart lists, or one project's open tasks. It uses e
 
 → **200** `{"tasks": [Task, …]}`. **404** if `project_id` isn't one of your projects; **400** for an unknown view.
 
-> "Today" is decided by the server's date. At present the smart lists compare against the **UTC** date, while reminders and the web UI's row colours use server-local time. Near midnight, in zones away from UTC, a task can show in Upcoming instead of Today. This is a known server quirk and will be fixed on the server; clients don't need a workaround.
+> "Today" is the server's local date (its `TZ`), the same zone used for reminders and the web UI. A task due on that date or earlier is in `today`; a later one is in `upcoming`.
 
 #### `GET /tasks/{id}`
 

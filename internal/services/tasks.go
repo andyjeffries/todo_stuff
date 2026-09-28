@@ -242,8 +242,11 @@ func escapeLike(s string) string {
 // "YYYY-MM-DD HH:MM:SS+00:00" string, but we conceptually only care about
 // the date portion. SQLite's `date()` normalises both formats so the
 // comparison is correct regardless of how a row was written.
+//
+// "Today" is the server-local calendar date (TZ env), matching reminders and
+// the handlers' grouping; now itself may be in any zone.
 func viewQuery(userID string, view View, now time.Time) (where, order string, args []any) {
-	today := now.Format("2006-01-02")
+	today := now.In(time.Local).Format("2006-01-02")
 	switch view {
 	case ViewToday:
 		return `t.user_id = ? AND t.completed_at IS NULL AND (t.due_date IS NULL OR date(t.due_date) <= ?)`,

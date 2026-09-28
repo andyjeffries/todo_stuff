@@ -228,9 +228,7 @@ func TestAPIRequestValidation(t *testing.T) {
 func TestAPITasksAndProjects(t *testing.T) {
 	h := newAPIServer(t)
 	c := setupAdmin(t, h)
-	// Smart lists bucket by the UTC date (services.viewQuery), so use that
-	// to keep the view assertions stable in any TZ.
-	now := time.Now().UTC()
+	now := time.Now()
 	today := now.Format("2006-01-02")
 	tomorrow := now.AddDate(0, 0, 1).Format("2006-01-02")
 
