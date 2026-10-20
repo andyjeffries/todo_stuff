@@ -698,7 +698,8 @@ SELECT t.id, t.user_id, t.project_id, t.title, t.notes, t.notes_html,
        t.reminder_at, t.reminder_offset_minutes, t.reminder_sent_at,
        t.completed_at, t.position, t.recurrence_rule_id, t.created_at, t.updated_at,
        p.name, p.icon,
-       r.frequency, r.interval, r.regeneration_type
+       r.frequency, r.interval, r.regeneration_type,
+       t.ical_uid, t.ical_href, t.ical_extra
   FROM tasks t
   LEFT JOIN projects p ON p.id = t.project_id
   LEFT JOIN recurrence_rules r ON r.id = t.recurrence_rule_id`
@@ -716,6 +717,7 @@ func scanTask(s scanner) (*models.Task, error) {
 		&t.CompletedAt, &t.Position, &t.RecurrenceRuleID, &t.CreatedAt, &t.UpdatedAt,
 		&t.ProjectName, &t.ProjectIcon,
 		&t.RecurrenceFrequency, &t.RecurrenceInterval, &t.RecurrenceType,
+		&t.ICalUID, &t.ICalHref, &t.ICalExtra,
 	)
 	if errors.Is(err, sql.ErrNoRows) {
 		return nil, ErrTaskNotFound

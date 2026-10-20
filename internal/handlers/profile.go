@@ -32,6 +32,10 @@ type profileViewData struct {
 	Section             string // "profile" | "password" | "pushover"
 	FormPushoverKey     string // last value the form posted, may be unsaved
 	PushoverDisplayMode string // "masked" | "input"
+
+	AppPasswords   []auth.AppPassword
+	NewAppPassword string // plaintext of the one just created, shown once
+	DAVServer      string // host:port to type into a CalDAV account
 }
 
 // ProfilePage renders /profile (GET).
@@ -162,6 +166,12 @@ func (h *Handlers) ProfilePushoverTest(w http.ResponseWriter, r *http.Request) {
 // (masked vs editable input) is computed server-side so the template stays
 // declarative.
 func (h *Handlers) renderProfile(w http.ResponseWriter, r *http.Request, section, flash, errMsg, formPushoverKey string) {
+	h.renderProfileWith(w, r, section, flash, errMsg, formPushoverKey, "")
+}
+
+// renderProfileWith is renderProfile plus a freshly created app password to
+// reveal (once) in the Connected devices card.
+func (h *Handlers) renderProfileWith(w http.ResponseWriter, r *http.Request, section, flash, errMsg, formPushoverKey, newAppPassword string) {
 	user, ok := auth.UserFromContext(r.Context())
 	if !ok {
 		http.Redirect(w, r, "/login", http.StatusFound)
@@ -194,6 +204,13 @@ func (h *Handlers) renderProfile(w http.ResponseWriter, r *http.Request, section
 		Section:             section,
 		FormPushoverKey:     formPushoverKey,
 		PushoverDisplayMode: mode,
+		NewAppPassword:      newAppPassword,
+		DAVServer:           r.Host,
+	}
+	if aps, err := h.Auth.ListAppPasswords(r.Context(), user.ID); err == nil {
+		data.AppPasswords = aps
+	} else {
+		slog.Error("list app passwords", "err", err)
 	}
 
 	if err := h.Render.Render(w, http.StatusOK, "profile", "app", data); err != nil {

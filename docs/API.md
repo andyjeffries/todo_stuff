@@ -31,6 +31,7 @@ The web client's own HTMX endpoints (`/tasks`, `/projects`, `/api/search`, `/api
 7. [Notifications: recommended client strategy](#notifications-recommended-client-strategy)
 8. [Error codes](#error-codes)
 9. [Endpoint summary](#endpoint-summary)
+10. [CalDAV](#caldav)
 
 ---
 
@@ -351,6 +352,16 @@ Sends a test Pushover notification. The body is optional: `{"pushover_user_key":
 | 422 | `validation_failed` | No key was supplied or saved. |
 | 422 | `invalid_pushover_key` | Pushover rejected the key. |
 | 502 | `pushover_error` | Pushover couldn't be reached. |
+
+#### `GET /me/app-passwords` · `POST /me/app-passwords` · `DELETE /me/app-passwords/{id}`
+
+App passwords are the credentials for the [CalDAV endpoint](#caldav), one per device. `POST` takes `{"label": "iPhone"}` and answers **201** with the only copy of the password:
+
+```json
+{ "id": "dc9c…", "label": "iPhone", "password": "aq24-m7vd-r9fb-edgt", "last_used_at": null, "created_at": "2026-10-20T08:16:17Z" }
+```
+
+`GET` lists them as `{"app_passwords": [...]}` without `password`. `last_used_at` is the device's last sync, to the minute. `DELETE` revokes one (**204**, or **404** `not_found`).
 
 ### Tasks
 
@@ -681,6 +692,9 @@ Qt notes:
 | PATCH | `/me` | ✓ | Update name / Pushover key |
 | POST | `/me/password` | ✓ | Change password |
 | POST | `/me/pushover/test` | ✓ | Send a test push |
+| GET | `/me/app-passwords` | ✓ | List CalDAV app passwords |
+| POST | `/me/app-passwords` | ✓ | Create one (password shown once) |
+| DELETE | `/me/app-passwords/{id}` | ✓ | Revoke one |
 | GET | `/tasks` | ✓ | Smart list or project list |
 | POST | `/tasks` | ✓ | Create task |
 | GET | `/tasks/{id}` | ✓ | Get task |
@@ -704,3 +718,17 @@ Qt notes:
 | PATCH | `/admin/users/{id}` | admin | Edit email / name / admin flag |
 | DELETE | `/admin/users/{id}` | admin | Delete user and all their data |
 | POST | `/admin/users/{id}/reset-password` | admin | Reset password, revoke sessions |
+
+---
+
+## CalDAV
+
+Outside `/api/v1`, the server is also a CalDAV server for to-dos, so Apple Reminders (or any CalDAV client) can use TodoStuff as a reminders account. Each project is a VTODO list, and tasks with no project are in a list called **Inbox**.
+
+- **Discovery:** point the client at `host:port`. `/.well-known/caldav` and `PROPFIND /` both lead to `/dav/principals/{user-id}/`.
+- **Auth:** HTTP Digest (MD5, `qop=auth`, which is what iOS uses over plain HTTP, because it won't send a Basic password without TLS) or HTTP Basic, with the account email and an [app password](#get-meapp-passwords--post-meapp-passwords--delete-meapp-passwordsid). The account password is refused.
+- **Layout:** `/dav/calendars/{user-id}/inbox/` and `/dav/calendars/{user-id}/{project-id}/`, with one `.ics` per task. A collection holds the open tasks plus those completed in the last 30 days.
+- **Supported:** `PROPFIND`, `REPORT` (`calendar-multiget`, `calendar-query`), `GET`, `PUT`, `DELETE`, ETags with `If-Match` / `If-None-Match`, and CalendarServer `getctag` for change detection. `sync-collection` isn't offered. Lists can't be created, renamed or deleted over CalDAV: `MKCALENDAR` and `PROPPATCH` are refused.
+- **Mapping:** `SUMMARY`↔title, `DESCRIPTION`↔notes, `DUE`↔due date and time (read in any zone and converted to the server's `TZ`; always written as `TZID=<server zone>` with a matching `VTIMEZONE`, because iOS keeps whatever zone a reminder arrives in and would otherwise edit it in UTC), `PRIORITY` 1–4↔important, `STATUS:COMPLETED`↔complete or uncomplete, and `RRULE` FREQ + INTERVAL↔recurrence (anything else, such as `COUNT`, `UNTIL` or several weekdays, gets 403). The first `VALARM` becomes the reminder (written back relative to `DTSTART`, e.g. `TRIGGER:-PT15M`, because iOS displays an absolute UTC trigger as a second time zone), snapped to the nearest allowed offset that isn't later than the alarm. An alarm on an all-day reminder becomes its due time. Properties TodoStuff doesn't model (`X-APPLE-*`, …) are stored and sent back unchanged.
+- **Writes** go through the same services as the API, so completing a recurring task over CalDAV generates the next instance and the `/sync` token moves.
+- **Debugging:** `CALDAV_TRACE=1` logs every CalDAV request and response body (the `Authorization` header is left out).

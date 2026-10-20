@@ -157,4 +157,68 @@
     </div>
   </form>
 </section>
+
+<section id="devices" class="mb-10 rounded-2xl border border-stone-200 dark:border-stone-700 bg-white dark:bg-stone-800 p-6 shadow-sm">
+  <h2 class="text-base font-semibold text-stone-900 dark:text-stone-100">Connected devices</h2>
+  <p class="mt-1 text-xs text-stone-500 dark:text-stone-400">
+    Use TodoStuff as a reminders account on an iPhone, iPad or any CalDAV app. Each project becomes a list, plus an Inbox.
+    Give every device its own app password so you can revoke one without the others.
+  </p>
+
+  {{if and (eq $section "devices") $flashThis}}
+  <div class="mt-4 rounded-md border border-emerald-200 dark:border-emerald-800 bg-emerald-50 dark:bg-emerald-900/30 px-3 py-2 text-sm text-emerald-700 dark:text-emerald-300">{{$flashThis}}</div>
+  {{end}}
+  {{if and (eq $section "devices") $errThis}}
+  <div class="mt-4 rounded-md border border-red-200 dark:border-red-800 bg-red-50 dark:bg-red-900/30 px-3 py-2 text-sm text-red-700 dark:text-red-300">{{$errThis}}</div>
+  {{end}}
+
+  {{if .NewAppPassword}}
+  <dl class="mt-4 grid grid-cols-[auto_1fr] gap-x-4 gap-y-2 rounded-lg border border-amber-200 dark:border-amber-800 bg-amber-50 dark:bg-amber-900/20 px-4 py-3 text-sm">
+    <dt class="text-stone-500 dark:text-stone-400">Server</dt>
+    <dd class="font-mono text-stone-900 dark:text-stone-100 select-all">{{.DAVServer}}</dd>
+    <dt class="text-stone-500 dark:text-stone-400">User name</dt>
+    <dd class="font-mono text-stone-900 dark:text-stone-100 select-all">{{.User.Email}}</dd>
+    <dt class="text-stone-500 dark:text-stone-400">Password</dt>
+    <dd class="font-mono text-base font-semibold text-stone-900 dark:text-stone-100 select-all">{{.NewAppPassword}}</dd>
+  </dl>
+  <p class="mt-2 text-xs text-stone-500 dark:text-stone-400">
+    On the device: Settings → Apps → Reminders → Reminders Accounts → Add Account → Other → Add CalDAV Account.
+    When it says it can't connect using SSL, carry on without it.
+  </p>
+  {{end}}
+
+  {{if .AppPasswords}}
+  <ul class="mt-5 divide-y divide-stone-100 dark:divide-stone-700 border-y border-stone-100 dark:border-stone-700">
+    {{range .AppPasswords}}
+    <li class="flex items-center justify-between gap-3 py-3">
+      <div>
+        <div class="text-sm font-medium text-stone-900 dark:text-stone-100">{{.Label}}</div>
+        <div class="text-xs text-stone-500 dark:text-stone-400">
+          Created {{.CreatedAt.Format "2 Jan 2006"}} ·
+          {{if .LastUsedAt.Valid}}last synced {{.LastUsedAt.Time.Local.Format "2 Jan 2006 15:04"}}{{else}}never used{{end}}
+        </div>
+      </div>
+      <form method="POST" action="/profile/app-passwords/{{.ID}}/delete">
+        <button type="submit"
+                class="rounded-md border border-stone-300 dark:border-stone-600 bg-white dark:bg-stone-800 px-2.5 py-1.5 text-xs font-medium text-stone-700 dark:text-stone-200 hover:bg-red-50 dark:hover:bg-red-900/30 hover:text-red-700 dark:hover:text-red-400 hover:border-red-300 dark:hover:border-red-800">
+          Revoke
+        </button>
+      </form>
+    </li>
+    {{end}}
+  </ul>
+  {{end}}
+
+  <form method="POST" action="/profile/app-passwords" class="mt-5 flex items-end gap-3">
+    <div class="flex-1">
+      <label for="app_password_label" class="block text-sm font-medium text-stone-700 dark:text-stone-200 mb-1">Device name</label>
+      <input id="app_password_label" name="label" type="text" required maxlength="60" placeholder="iPhone"
+             class="block w-full rounded-lg border border-stone-300 dark:border-stone-600 bg-white dark:bg-stone-900 px-3 py-2 text-sm text-stone-900 dark:text-stone-100 shadow-sm focus:border-amber-400 focus:outline-none focus:ring-2 focus:ring-amber-200">
+    </div>
+    <button type="submit"
+            class="rounded-lg bg-amber-400 px-4 py-2 text-sm font-semibold text-stone-900 shadow-sm transition hover:bg-amber-300 focus:outline-none focus:ring-2 focus:ring-amber-300">
+      New app password
+    </button>
+  </form>
+</section>
 {{end}}

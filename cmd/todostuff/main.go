@@ -87,6 +87,14 @@ func main() {
 	// outside the cookie-protected group because it handles its own auth.
 	r.Mount("/api/v1", h.APIRouter())
 
+	// CalDAV (Apple Reminders and friends): HTTP Basic with an app password,
+	// so also outside the cookie-protected group.
+	dav := h.DAVHandler()
+	r.Handle("/dav", dav)
+	r.Handle("/dav/*", dav)
+	r.Handle("/.well-known/caldav", dav)
+	r.Method("PROPFIND", "/", dav)
+
 	// Static
 	staticFS := http.FileServer(http.Dir("./web/static"))
 	r.Handle("/static/*", http.StripPrefix("/static/", staticFS))
@@ -127,6 +135,8 @@ func main() {
 		pr.Post("/profile", h.ProfileUpdate)
 		pr.Post("/profile/password", h.ProfilePassword)
 		pr.Post("/profile/pushover/test", h.ProfilePushoverTest)
+		pr.Post("/profile/app-passwords", h.ProfileAppPasswordCreate)
+		pr.Post("/profile/app-passwords/{id}/delete", h.ProfileAppPasswordDelete)
 
 		// Admin (gated by RequireAdmin on top of RequireAuth). Same PUT/POST
 		// dual-mount trick as /profile so curl + browser forms both work.

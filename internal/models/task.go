@@ -37,6 +37,29 @@ type Task struct {
 	RecurrenceFrequency sql.NullString
 	RecurrenceInterval  sql.NullInt64
 	RecurrenceType      sql.NullString
+
+	// CalDAV identity, set when a CalDAV client created or wrote the task.
+	// NULL means UID = ID and resource name = ID + ".ics". ICalExtra is the
+	// JSON array of VTODO properties the server doesn't model.
+	ICalUID   sql.NullString
+	ICalHref  sql.NullString
+	ICalExtra sql.NullString
 }
 
 func (t *Task) IsCompleted() bool { return t.CompletedAt.Valid }
+
+// CalDAVUID is the iCalendar UID a CalDAV client knows this task by.
+func (t *Task) CalDAVUID() string {
+	if t.ICalUID.Valid {
+		return t.ICalUID.String
+	}
+	return t.ID
+}
+
+// CalDAVName is the task's resource name inside its CalDAV collection.
+func (t *Task) CalDAVName() string {
+	if t.ICalHref.Valid {
+		return t.ICalHref.String
+	}
+	return t.ID + ".ics"
+}

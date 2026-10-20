@@ -54,6 +54,9 @@ func (h *Handlers) APIRouter() http.Handler {
 		ar.Patch("/me", h.APIMeUpdate)
 		ar.Post("/me/password", h.APIMePassword)
 		ar.Post("/me/pushover/test", h.APIMePushoverTest)
+		ar.Get("/me/app-passwords", h.APIAppPasswordList)
+		ar.Post("/me/app-passwords", h.APIAppPasswordCreate)
+		ar.Delete("/me/app-passwords/{id}", h.APIAppPasswordDelete)
 
 		ar.Get("/tasks", h.APITaskList)
 		ar.Post("/tasks", h.APITaskCreate)
