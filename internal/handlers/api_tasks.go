@@ -455,7 +455,7 @@ func (h *Handlers) APISearch(w http.ResponseWriter, r *http.Request) {
 // APIRemindersClaim handles POST /api/v1/reminders/claim. Atomically claims
 // every due, undelivered reminder on the client channel (the same one the
 // web page's poller uses) and returns the tasks. Each reminder is returned
-// exactly once across all clients; Pushover delivery is tracked separately.
+// exactly once across all clients.
 func (h *Handlers) APIRemindersClaim(w http.ResponseWriter, r *http.Request) {
 	user, _ := auth.UserFromContext(r.Context())
 	due, err := h.Tasks.PopDueReminders(r.Context(), user.ID)

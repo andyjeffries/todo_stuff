@@ -21,8 +21,7 @@ What's working today:
 - **Markdown notes** rendered with goldmark (GFM: tables, strikethrough, autolinks). Click-to-edit: rendered preview by default, source-edit textarea on click.
 - **Recurring tasks** with two regeneration modes — *fixed schedule* (anchor on the previous due date, e.g. car insurance) and *after completion* (anchor on the completion timestamp, e.g. flu vaccine). On-create instances regenerate the moment the current one is completed.
 - **Reminders** as a curated offset before the task's due datetime (5 / 10 / 15 / 30 minutes, 1 / 2 / 4 / 8 / 12 / 24 hours before, or "at the time"). Browser notifications fire via JS polling against a `/api/reminders/due` endpoint.
-- **Pushover** — paste your Pushover user key under `/profile`, flip the toggle, and reminders ping your phone via [Pushover](https://pushover.net) the moment they're due. A server-side dispatcher delivers each reminder exactly once on its own channel, independent of the browser poller. There's a "Send test notification" button so you can verify the wiring without waiting for a real reminder.
-- **Profile page** at `/profile` — edit your name, configure Pushover, and change your password. Email changes stay an admin operation.
+- **Profile page** at `/profile` — edit your name, change your password, and manage app passwords for connected CalDAV devices. Email changes stay an admin operation.
 - **Quick-add modal** reachable from the sidebar `+` button or a floating-action button on every page. "Fire and forget" capture: type a title, hit Enter, see a green check, keep typing.
 - **Slide-over detail panel** — click any task to open it; edit title, project, dates, reminder, recurrence, importance, and notes inline. The list updates as you type.
 - **Multi-user** with first-run admin onboarding (`/setup`), bcrypt password hashing, and HttpOnly + SameSite=Strict session cookies.
@@ -67,7 +66,7 @@ Press `?` from any view to see every binding. The same keys are surfaced as subt
 
 ### Profile
 
-Configure Pushover and change your password. The "Send test notification" button verifies the wiring without waiting for a real reminder; if the server isn't configured with a `PUSHOVER_APP_TOKEN` you'll see an inline notice on the page.
+Edit your name, change your password, and create or revoke the app passwords your CalDAV devices sign in with.
 
 ![Profile](docs/screenshots/profile.png)
 
@@ -104,7 +103,7 @@ cd todostuff
 docker compose up -d
 ```
 
-This pulls the prebuilt image from `ghcr.io/andyjeffries/todo_stuff:latest` (no local build needed), mounts a named volume at `/data` for the SQLite file, and exposes the app on `http://localhost:8636`. The first request redirects you to `/setup` to create the admin user. Defaults work for a localhost install; copy `.env.example` to `.env` if you want to set `PUSHOVER_APP_TOKEN`, `TZ`, or `COOKIE_SECURE`. Swap `image:` for `build: .` in `docker-compose.yml` if you'd rather build from source.
+This pulls the prebuilt image from `ghcr.io/andyjeffries/todo_stuff:latest` (no local build needed), mounts a named volume at `/data` for the SQLite file, and exposes the app on `http://localhost:8636`. The first request redirects you to `/setup` to create the admin user. Defaults work for a localhost install; copy `.env.example` to `.env` if you want to set `TZ` or `COOKIE_SECURE`. Swap `image:` for `build: .` in `docker-compose.yml` if you'd rather build from source.
 
 > **Why 8636?** That's "TODO" on a T9 phone keypad (T=8, O=6, D=3, O=6). It's IANA-unassigned and doesn't clash with any of the usual self-host suspects (Jellyfin 8096, Home Assistant 8123, Sonarr 8989, Vikunja 3456, Bitwarden 8080…), so it should Just Work alongside whatever else you're running.
 
@@ -127,7 +126,6 @@ Then open `http://localhost:8636`. The first request creates the SQLite DB at `.
 | `PORT` | `8636` | HTTP listen port. "TODO" on a T9 keypad — IANA-unassigned and clear of common self-host defaults. |
 | `COOKIE_SECURE` | `false` | Set to `true` behind HTTPS in production. |
 | `TZ` | system default | Timezone for due-date / due-time / reminder calculations. The browser posts `<input type="date">` / `time` values without a timezone; the server interprets them in `TZ`. |
-| `PUSHOVER_APP_TOKEN` | unset | Optional. Application token from your [Pushover](https://pushover.net) account. When set, the server runs a 60-second-tick dispatcher that delivers due reminders to users who've enabled Pushover in `/profile`. Unset = feature disabled, no dispatcher overhead. |
 
 ### Make targets
 
@@ -161,7 +159,6 @@ internal/
   handlers/            HTTP handlers.
   middleware/          RequireAuth, RequireAdmin, AllowHead.
   models/              Pure structs that mirror DB rows.
-  notifications/       Outbound channels (Pushover today).
   render/              Template loader + funcs.
   services/            Business logic (Tasks, Projects, recurrence, reminders).
 migrations/            Numbered SQL files, applied lexicographically once.

@@ -23,8 +23,8 @@ COPY . .
 RUN CGO_ENABLED=1 GOOS=linux \
     go build -trimpath -ldflags="-s -w" -o /out/todostuff ./cmd/todostuff
 
-# 3. Minimal runtime. ca-certificates for outbound HTTPS to api.pushover.net,
-#    tzdata so TZ env var resolves, sqlite for ad-hoc DB inspection.
+# 3. Minimal runtime. ca-certificates for any outbound HTTPS, tzdata so TZ
+#    env var resolves, sqlite for ad-hoc DB inspection.
 FROM alpine:3.21
 RUN apk add --no-cache ca-certificates tzdata sqlite \
  && addgroup -S app && adduser -S -G app -h /app app

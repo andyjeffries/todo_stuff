@@ -94,9 +94,7 @@ func (s *Service) CreateUser(ctx context.Context, p CreateUserParams) (*models.U
 // here on purpose — changing email is an admin operation in this product
 // and out of scope for /profile.
 type UpdateProfileParams struct {
-	Name            string
-	PushoverUserKey string // empty string = clear the key
-	PushoverEnabled bool
+	Name string
 }
 
 func (s *Service) UpdateProfile(ctx context.Context, userID string, p UpdateProfileParams) error {
@@ -104,29 +102,12 @@ func (s *Service) UpdateProfile(ctx context.Context, userID string, p UpdateProf
 	if name == "" {
 		return errors.New("auth: name is required")
 	}
-	key := strings.TrimSpace(p.PushoverUserKey)
-	// An empty key means "no Pushover" — also force enabled=0 so the dispatcher
-	// can rely on `enabled=1 AND key IS NOT NULL` without an extra null check.
-	enabled := p.PushoverEnabled
-	if key == "" {
-		enabled = false
-	}
-
-	var keyArg any
-	if key == "" {
-		keyArg = nil
-	} else {
-		keyArg = key
-	}
-
 	res, err := s.db.ExecContext(ctx, `
         UPDATE users
            SET name = ?,
-               pushover_user_key = ?,
-               pushover_enabled = ?,
                updated_at = ?
          WHERE id = ?
-    `, name, keyArg, enabled, time.Now().UTC(), userID)
+    `, name, time.Now().UTC(), userID)
 	if err != nil {
 		return fmt.Errorf("update profile: %w", err)
 	}
@@ -174,7 +155,7 @@ func (s *Service) FindUserByID(ctx context.Context, id string) (*models.User, er
 func (s *Service) ListUsers(ctx context.Context) ([]*models.User, error) {
 	rows, err := s.db.QueryContext(ctx, `
         SELECT id, email, password_hash, name, is_admin,
-               pushover_user_key, pushover_enabled, created_at, updated_at
+               created_at, updated_at
           FROM users
          ORDER BY created_at ASC, id ASC
     `)
@@ -187,7 +168,7 @@ func (s *Service) ListUsers(ctx context.Context) ([]*models.User, error) {
 	for rows.Next() {
 		var u models.User
 		if err := rows.Scan(&u.ID, &u.Email, &u.PasswordHash, &u.Name, &u.IsAdmin,
-			&u.PushoverUserKey, &u.PushoverEnabled, &u.CreatedAt, &u.UpdatedAt); err != nil {
+			&u.CreatedAt, &u.UpdatedAt); err != nil {
 			return nil, fmt.Errorf("scan user: %w", err)
 		}
 		out = append(out, &u)
@@ -195,8 +176,7 @@ func (s *Service) ListUsers(ctx context.Context) ([]*models.User, error) {
 	return out, rows.Err()
 }
 
-// UpdateUserParams collects the admin-editable fields. Pushover stays out:
-// admins shouldn't paste a teammate's personal key.
+// UpdateUserParams collects the admin-editable fields.
 type UpdateUserParams struct {
 	Email   string
 	Name    string
@@ -290,11 +270,11 @@ func (s *Service) CountAdmins(ctx context.Context) (int, error) {
 func (s *Service) queryUser(ctx context.Context, where string, args ...any) (*models.User, error) {
 	row := s.db.QueryRowContext(ctx, `
         SELECT id, email, password_hash, name, is_admin,
-               pushover_user_key, pushover_enabled, created_at, updated_at
+               created_at, updated_at
           FROM users `+where, args...)
 	var u models.User
 	err := row.Scan(&u.ID, &u.Email, &u.PasswordHash, &u.Name, &u.IsAdmin,
-		&u.PushoverUserKey, &u.PushoverEnabled, &u.CreatedAt, &u.UpdatedAt)
+		&u.CreatedAt, &u.UpdatedAt)
 	if errors.Is(err, sql.ErrNoRows) {
 		return nil, ErrNotFound
 	}
@@ -360,7 +340,7 @@ func (s *Service) LookupSession(ctx context.Context, token string) (*models.Sess
 	row := s.db.QueryRowContext(ctx, `
         SELECT s.id, s.user_id, s.expires_at, s.created_at,
                u.id, u.email, u.password_hash, u.name, u.is_admin,
-               u.pushover_user_key, u.pushover_enabled, u.created_at, u.updated_at
+               u.created_at, u.updated_at
           FROM sessions s
           JOIN users u ON u.id = s.user_id
          WHERE s.id = ?
@@ -370,7 +350,7 @@ func (s *Service) LookupSession(ctx context.Context, token string) (*models.Sess
 	var u models.User
 	err := row.Scan(&sess.ID, &sess.UserID, &sess.ExpiresAt, &sess.CreatedAt,
 		&u.ID, &u.Email, &u.PasswordHash, &u.Name, &u.IsAdmin,
-		&u.PushoverUserKey, &u.PushoverEnabled, &u.CreatedAt, &u.UpdatedAt)
+		&u.CreatedAt, &u.UpdatedAt)
 	if errors.Is(err, sql.ErrNoRows) {
 		return nil, nil, ErrNotFound
 	}

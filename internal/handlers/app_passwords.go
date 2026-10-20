@@ -27,16 +27,16 @@ func (h *Handlers) ProfileAppPasswordCreate(w http.ResponseWriter, r *http.Reque
 	}
 	label := strings.TrimSpace(r.PostFormValue("label"))
 	if label == "" {
-		h.renderProfile(w, r, "devices", "", "Give the device a name, e.g. iPhone.", "")
+		h.renderProfile(w, r, "devices", "", "Give the device a name, e.g. iPhone.")
 		return
 	}
 	_, pw, err := h.Auth.CreateAppPassword(r.Context(), user.ID, label)
 	if err != nil {
 		slog.Error("create app password", "err", err)
-		h.renderProfile(w, r, "devices", "", "Couldn't create the app password.", "")
+		h.renderProfile(w, r, "devices", "", "Couldn't create the app password.")
 		return
 	}
-	h.renderProfileWith(w, r, "devices", "App password for "+label+" created. Copy it now: it won't be shown again.", "", "", pw)
+	h.renderProfileWith(w, r, "devices", "App password for "+label+" created. Copy it now: it won't be shown again.", "", pw)
 }
 
 // ProfileAppPasswordDelete handles POST /profile/app-passwords/{id}/delete.
@@ -49,12 +49,12 @@ func (h *Handlers) ProfileAppPasswordDelete(w http.ResponseWriter, r *http.Reque
 	err := h.Auth.DeleteAppPassword(r.Context(), user.ID, chi.URLParam(r, "id"))
 	switch {
 	case errors.Is(err, auth.ErrNotFound):
-		h.renderProfile(w, r, "devices", "", "That app password no longer exists.", "")
+		h.renderProfile(w, r, "devices", "", "That app password no longer exists.")
 	case err != nil:
 		slog.Error("delete app password", "err", err)
-		h.renderProfile(w, r, "devices", "", "Couldn't revoke the app password.", "")
+		h.renderProfile(w, r, "devices", "", "Couldn't revoke the app password.")
 	default:
-		h.renderProfile(w, r, "devices", "App password revoked. That device can no longer sync.", "", "")
+		h.renderProfile(w, r, "devices", "App password revoked. That device can no longer sync.", "")
 	}
 }
 

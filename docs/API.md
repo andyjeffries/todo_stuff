@@ -232,14 +232,10 @@ Set `"recurrence": null` to stop a task recurring.
   "email": "me@example.com",
   "name": "Andy",
   "is_admin": true,
-  "pushover_enabled": true,
-  "pushover_user_key": "uQiRzpo4DXghDmr9QzzfQu27cmVRsG",
   "created_at": "…",
   "updated_at": "…"
 }
 ```
-
-`pushover_user_key` appears only on **your own** profile (`/me`, login and setup responses). Admin user listings leave it out.
 
 ---
 
@@ -258,7 +254,6 @@ Use this to discover the server, decide whether to show a "create admin" screen,
   "name": "TodoStuff",
   "api_version": 1,
   "needs_setup": false,
-  "pushover_available": true,
   "timezone": "Europe/London",
   "utc_offset_seconds": 3600,
   "server_time": "2026-09-28T13:02:01Z"
@@ -266,7 +261,6 @@ Use this to discover the server, decide whether to show a "create admin" screen,
 ```
 
 - `needs_setup`: true while no users exist. Call `POST /setup`.
-- `pushover_available`: whether the server has `PUSHOVER_APP_TOKEN` set.
 
 #### `POST /setup` (public)
 
@@ -325,10 +319,10 @@ This is an opaque fingerprint of the user's tasks, projects and profile. It chan
 #### `PATCH /me`
 
 ```json
-{ "name": "Andy J", "pushover_user_key": "uQiRzpo…" }
+{ "name": "Andy J" }
 ```
 
-Both fields are optional. A non-empty `pushover_user_key` turns on Pushover delivery for your reminders; `null` or `""` turns it off. Email can't be changed here; an admin changes it with `PATCH /admin/users/{id}`.
+Email can't be changed here; an admin changes it with `PATCH /admin/users/{id}`.
 
 → **200** updated Me.
 
@@ -339,19 +333,6 @@ Both fields are optional. A non-empty `pushover_user_key` turns on Pushover deli
 ```
 
 → **204**. **422** `incorrect_password` if the current password is wrong, or `validation_failed` if the new one is too short. Other tokens stay valid.
-
-#### `POST /me/pushover/test`
-
-Sends a test Pushover notification. The body is optional: `{"pushover_user_key": "…"}` tests a key before you save it; otherwise the saved key is used.
-
-→ **204** on success.
-
-| Status | Code | When |
-|---|---|---|
-| 503 | `pushover_unavailable` | The server has no `PUSHOVER_APP_TOKEN`. |
-| 422 | `validation_failed` | No key was supplied or saved. |
-| 422 | `invalid_pushover_key` | Pushover rejected the key. |
-| 502 | `pushover_error` | Pushover couldn't be reached. |
 
 #### `GET /me/app-passwords` · `POST /me/app-passwords` · `DELETE /me/app-passwords/{id}`
 
@@ -484,7 +465,7 @@ The list is empty when nothing is due. This is the endpoint to poll for notifica
 About delivery channels:
 
 - **Client channel.** This endpoint and the web page's poller share it, so whichever client polls first shows the notification.
-- **Pushover channel.** Tracked separately. If the user has Pushover enabled, their phone *also* gets every reminder, whatever the clients do.
+- **CalDAV devices.** Not part of the claim. A device synced over [CalDAV](#caldav) gets each reminder as an alarm and rings it locally, whatever the clients do.
 - A reminder becomes deliverable again only if its time changes (you edit the date, time or offset).
 
 ### Projects
@@ -599,7 +580,7 @@ What the web UI does, and how to do the same with this API:
 | Search overlay (`/`) | `GET /search?q=…` |
 | Auto-refresh | Poll `GET /sync`; refetch when the token changes |
 | Browser reminders | Poll `POST /reminders/claim` and show native notifications |
-| Profile, Pushover, password | `GET`/`PATCH /me`, `POST /me/pushover/test`, `POST /me/password` |
+| Profile, password | `GET`/`PATCH /me`, `POST /me/password` |
 | Admin → Users | `/admin/users…` |
 | First-run `/setup` | `GET /status` → `POST /setup` |
 | Light/dark theme | Client-side only; the server doesn't store it |
@@ -644,7 +625,7 @@ The reason for this API is reliable desktop notifications, so here is a pattern 
 2. **Poll on wake.** Call it once at start-up and again after the system resumes from sleep, so reminders that came due while the app was closed or asleep are delivered straight away. The server keeps unclaimed reminders indefinitely until the task is completed.
 3. **Optional: exact-time firing.** From your cached open tasks (`GET /tasks?view=anytime`), find the smallest future `reminder_at`. Set a single-shot `QTimer` for that moment and claim when it fires. You still claim, so the reminder is delivered exactly once.
 4. **Click-through.** A notification's task ID lets the app open that task's detail view (`GET /tasks/{id}`).
-5. **Don't double up.** If the web page is also open with browser notifications allowed, it competes for the same claim; whichever polls first shows the reminder. Pushover is separate and always delivers to the phone if it's enabled.
+5. **Don't double up.** If the web page is also open with browser notifications allowed, it competes for the same claim; whichever polls first shows the reminder. CalDAV devices are separate: they ring their own alarms.
 
 Qt notes:
 
@@ -671,11 +652,8 @@ Qt notes:
 | 415 | `unsupported_media_type` | Body isn't `application/json` |
 | 422 | `validation_failed` | A field value was rejected; `message` names the field |
 | 422 | `incorrect_password` | Wrong current password on `/me/password` |
-| 422 | `invalid_pushover_key` | Pushover rejected the key |
 | 422 | `cannot_demote_self` / `cannot_delete_self` / `last_admin` | Admin self-protection rules |
 | 500 | `internal_error` | Server bug; the details are in the server log |
-| 502 | `pushover_error` | Pushover couldn't be reached |
-| 503 | `pushover_unavailable` | Server has no `PUSHOVER_APP_TOKEN` |
 
 ---
 
@@ -689,9 +667,8 @@ Qt notes:
 | POST | `/auth/logout` | ✓ | Revoke this token |
 | GET | `/sync` | ✓ | Change-detection token |
 | GET | `/me` | ✓ | Own profile |
-| PATCH | `/me` | ✓ | Update name / Pushover key |
+| PATCH | `/me` | ✓ | Update name |
 | POST | `/me/password` | ✓ | Change password |
-| POST | `/me/pushover/test` | ✓ | Send a test push |
 | GET | `/me/app-passwords` | ✓ | List CalDAV app passwords |
 | POST | `/me/app-passwords` | ✓ | Create one (password shown once) |
 | DELETE | `/me/app-passwords/{id}` | ✓ | Revoke one |

@@ -8,7 +8,6 @@ import (
 	"os"
 	"os/signal"
 	"strconv"
-	"strings"
 	"syscall"
 	"time"
 
@@ -16,7 +15,6 @@ import (
 	"github.com/andyjessop/todostuff/internal/database"
 	"github.com/andyjessop/todostuff/internal/handlers"
 	appmw "github.com/andyjessop/todostuff/internal/middleware"
-	"github.com/andyjessop/todostuff/internal/notifications"
 	"github.com/andyjessop/todostuff/internal/render"
 	"github.com/andyjessop/todostuff/internal/services"
 	"github.com/andyjessop/todostuff/migrations"
@@ -32,7 +30,6 @@ func main() {
 	dbPath := envOr("DATABASE_PATH", "./data/todostuff.db")
 	port := envOr("PORT", "8636")
 	cookieSecure := envBool("COOKIE_SECURE", false)
-	pushoverToken := os.Getenv("PUSHOVER_APP_TOKEN")
 
 	db, err := database.Open(dbPath)
 	if err != nil {
@@ -50,12 +47,6 @@ func main() {
 	authSvc := auth.NewService(db, cookieSecure)
 	tasksSvc := services.NewTasks(db)
 	projectsSvc := services.NewProjects(db)
-	pushover := notifications.NewPushover(pushoverToken)
-	if pushover.Enabled() {
-		logger.Info("pushover enabled")
-	} else {
-		logger.Info("pushover disabled (PUSHOVER_APP_TOKEN unset)")
-	}
 
 	renderer, err := render.New(web.TemplateFS)
 	if err != nil {
@@ -63,7 +54,7 @@ func main() {
 		os.Exit(1)
 	}
 
-	h := handlers.New(authSvc, tasksSvc, projectsSvc, pushover, renderer)
+	h := handlers.New(authSvc, tasksSvc, projectsSvc, renderer)
 
 	r := chi.NewRouter()
 	r.Use(middleware.RequestID)
@@ -134,7 +125,6 @@ func main() {
 		pr.Put("/profile", h.ProfileUpdate)
 		pr.Post("/profile", h.ProfileUpdate)
 		pr.Post("/profile/password", h.ProfilePassword)
-		pr.Post("/profile/pushover/test", h.ProfilePushoverTest)
 		pr.Post("/profile/app-passwords", h.ProfileAppPasswordCreate)
 		pr.Post("/profile/app-passwords/{id}/delete", h.ProfileAppPasswordDelete)
 
@@ -158,13 +148,6 @@ func main() {
 		ReadHeaderTimeout: 5 * time.Second,
 	}
 
-	// Background dispatcher: fires Pushover for any due reminder belonging to
-	// a user with pushover_enabled=1 + key set. Independent of the JS browser
-	// poller — different *_sent_at column, so both channels fire once each.
-	dispatcherCtx, dispatcherStop := context.WithCancel(context.Background())
-	defer dispatcherStop()
-	go runReminderDispatcher(dispatcherCtx, tasksSvc, pushover, logger)
-
 	go func() {
 		logger.Info("server listening", "addr", srv.Addr)
 		if err := srv.ListenAndServe(); err != nil && !errors.Is(err, http.ErrServerClosed) {
@@ -178,77 +161,11 @@ func main() {
 	<-stop
 	logger.Info("shutting down")
 
-	dispatcherStop()
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
 	if err := srv.Shutdown(ctx); err != nil {
 		logger.Error("shutdown error", "err", err)
 	}
-}
-
-// runReminderDispatcher polls every 60s for due Pushover reminders and sends
-// them. Skips entirely when Pushover isn't configured — saves the DB scan.
-// On send failure we log but leave the row marked sent: retrying every minute
-// against a misconfigured user key would just spam the API. The user gets a
-// new chance the next time they edit the reminder (which clears the flag).
-func runReminderDispatcher(ctx context.Context, tasks *services.Tasks, push *notifications.Pushover, logger *slog.Logger) {
-	if !push.Enabled() {
-		return
-	}
-	const tick = 60 * time.Second
-
-	// Fire immediately on startup so a reminder that came due during downtime
-	// doesn't have to wait a full minute.
-	dispatchOnce(ctx, tasks, push, logger)
-
-	t := time.NewTicker(tick)
-	defer t.Stop()
-	for {
-		select {
-		case <-ctx.Done():
-			return
-		case <-t.C:
-			dispatchOnce(ctx, tasks, push, logger)
-		}
-	}
-}
-
-func dispatchOnce(ctx context.Context, tasks *services.Tasks, push *notifications.Pushover, logger *slog.Logger) {
-	due, err := tasks.PopDuePushoverReminders(ctx)
-	if err != nil {
-		logger.Error("pop due pushover reminders", "err", err)
-		return
-	}
-	for _, r := range due {
-		err := push.Send(ctx, notifications.SendParams{
-			UserKey: r.PushoverUserKey,
-			Title:   r.Title,
-			Message: pushoverMessage(r),
-		})
-		if err != nil {
-			logger.Warn("pushover send", "task_id", r.TaskID, "err", err)
-		}
-	}
-}
-
-// pushoverMessage builds the body for a reminder push: due date/time and
-// project, one per line. Pushover rejects an empty `message`, so we fall
-// back to the title if a task somehow has neither (shouldn't happen — a
-// reminder requires both due_date and due_time — but cheap insurance).
-func pushoverMessage(r services.DuePushoverReminder) string {
-	var lines []string
-	if r.DueDate.Valid && r.DueTime.Valid {
-		lines = append(lines, "Due "+r.DueDate.Time.Format("Mon 2 Jan")+" at "+r.DueTime.String)
-	} else if r.DueDate.Valid {
-		lines = append(lines, "Due "+r.DueDate.Time.Format("Mon 2 Jan"))
-	}
-	if r.Project != "" {
-		lines = append(lines, "Project: "+r.Project)
-	}
-	if len(lines) == 0 {
-		return r.Title
-	}
-	return strings.Join(lines, "\n")
 }
 
 func envOr(key, def string) string {

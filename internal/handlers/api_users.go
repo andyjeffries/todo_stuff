@@ -6,7 +6,6 @@ import (
 	"strings"
 
 	"github.com/andyjessop/todostuff/internal/auth"
-	"github.com/andyjessop/todostuff/internal/notifications"
 	"github.com/go-chi/chi/v5"
 )
 
@@ -15,18 +14,17 @@ import (
 // APIMe handles GET /api/v1/me.
 func (h *Handlers) APIMe(w http.ResponseWriter, r *http.Request) {
 	user, _ := auth.UserFromContext(r.Context())
-	writeJSON(w, http.StatusOK, toAPIMe(user))
+	writeJSON(w, http.StatusOK, toAPIUser(user))
 }
 
-// APIMeUpdate handles PATCH /api/v1/me: name and/or Pushover key. As in the
-// web profile, a non-empty key enables Pushover and null/"" disables it.
+// APIMeUpdate handles PATCH /api/v1/me: the user's name.
 func (h *Handlers) APIMeUpdate(w http.ResponseWriter, r *http.Request) {
 	user, _ := auth.UserFromContext(r.Context())
-	f, ok := decodeFields(w, r, "name", "pushover_user_key")
+	f, ok := decodeFields(w, r, "name")
 	if !ok {
 		return
 	}
-	p := auth.UpdateProfileParams{Name: user.Name, PushoverUserKey: user.PushoverUserKey.String}
+	p := auth.UpdateProfileParams{Name: user.Name}
 	if f.has("name") {
 		if f.isNull("name") {
 			apiInvalid(w, "name cannot be null.")
@@ -40,17 +38,6 @@ func (h *Handlers) APIMeUpdate(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 	}
-	if f.has("pushover_user_key") {
-		var key *string
-		if !f.get(w, "pushover_user_key", &key) {
-			return
-		}
-		p.PushoverUserKey = ""
-		if key != nil {
-			p.PushoverUserKey = strings.TrimSpace(*key)
-		}
-	}
-	p.PushoverEnabled = p.PushoverUserKey != ""
 
 	if err := h.Auth.UpdateProfile(r.Context(), user.ID, p); err != nil {
 		apiInternal(w, "update profile", err)
@@ -90,51 +77,13 @@ func (h *Handlers) APIMePassword(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusNoContent)
 }
 
-// APIMePushoverTest handles POST /api/v1/me/pushover/test. Uses the key in
-// the body if given (test-before-save), else the saved key.
-func (h *Handlers) APIMePushoverTest(w http.ResponseWriter, r *http.Request) {
-	user, _ := auth.UserFromContext(r.Context())
-	var in struct {
-		PushoverUserKey string `json:"pushover_user_key"`
-	}
-	if !decodeJSON(w, r, &in) {
-		return
-	}
-	if h.Pushover == nil || !h.Pushover.Enabled() {
-		apiError(w, http.StatusServiceUnavailable, "pushover_unavailable",
-			"Pushover isn't configured on this server (PUSHOVER_APP_TOKEN is unset).")
-		return
-	}
-	key := strings.TrimSpace(in.PushoverUserKey)
-	if key == "" {
-		key = user.PushoverUserKey.String
-	}
-	if key == "" {
-		apiInvalid(w, "No Pushover user key saved or supplied.")
-		return
-	}
-	err := h.Pushover.Send(r.Context(), notifications.SendParams{
-		UserKey: key,
-		Title:   "TodoStuff test",
-		Message: "Pushover is wired up correctly. You'll get reminders here.",
-	})
-	switch {
-	case errors.Is(err, notifications.ErrInvalidUserKey):
-		apiError(w, http.StatusUnprocessableEntity, "invalid_pushover_key", "Pushover rejected that user key.")
-	case err != nil:
-		apiError(w, http.StatusBadGateway, "pushover_error", "Couldn't reach Pushover. Try again in a moment.")
-	default:
-		w.WriteHeader(http.StatusNoContent)
-	}
-}
-
 func (h *Handlers) writeMe(w http.ResponseWriter, r *http.Request, id string) {
 	u, err := h.Auth.FindUserByID(r.Context(), id)
 	if err != nil {
 		apiInternal(w, "reload user", err)
 		return
 	}
-	writeJSON(w, http.StatusOK, toAPIMe(u))
+	writeJSON(w, http.StatusOK, toAPIUser(u))
 }
 
 // ------------------------------------------------------------------ Admin ---

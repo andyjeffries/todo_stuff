@@ -53,7 +53,6 @@ func (h *Handlers) APIRouter() http.Handler {
 		ar.Get("/me", h.APIMe)
 		ar.Patch("/me", h.APIMeUpdate)
 		ar.Post("/me/password", h.APIMePassword)
-		ar.Post("/me/pushover/test", h.APIMePushoverTest)
 		ar.Get("/me/app-passwords", h.APIAppPasswordList)
 		ar.Post("/me/app-passwords", h.APIAppPasswordCreate)
 		ar.Delete("/me/app-passwords/{id}", h.APIAppPasswordDelete)
@@ -200,36 +199,23 @@ func (f jsonFields) get(w http.ResponseWriter, k string, dst any) bool {
 // --------------------------------------------------------------- Wire types ---
 
 type apiUser struct {
-	ID              string    `json:"id"`
-	Email           string    `json:"email"`
-	Name            string    `json:"name"`
-	IsAdmin         bool      `json:"is_admin"`
-	PushoverEnabled bool      `json:"pushover_enabled"`
-	CreatedAt       time.Time `json:"created_at"`
-	UpdatedAt       time.Time `json:"updated_at"`
-}
-
-// apiMe is the signed-in user's own view of themselves: apiUser plus their
-// Pushover key, which admins listing other users never see.
-type apiMe struct {
-	apiUser
-	PushoverUserKey *string `json:"pushover_user_key"`
+	ID        string    `json:"id"`
+	Email     string    `json:"email"`
+	Name      string    `json:"name"`
+	IsAdmin   bool      `json:"is_admin"`
+	CreatedAt time.Time `json:"created_at"`
+	UpdatedAt time.Time `json:"updated_at"`
 }
 
 func toAPIUser(u *models.User) apiUser {
 	return apiUser{
-		ID:              u.ID,
-		Email:           u.Email,
-		Name:            u.Name,
-		IsAdmin:         u.IsAdmin,
-		PushoverEnabled: u.PushoverEnabled,
-		CreatedAt:       u.CreatedAt.UTC(),
-		UpdatedAt:       u.UpdatedAt.UTC(),
+		ID:        u.ID,
+		Email:     u.Email,
+		Name:      u.Name,
+		IsAdmin:   u.IsAdmin,
+		CreatedAt: u.CreatedAt.UTC(),
+		UpdatedAt: u.UpdatedAt.UTC(),
 	}
-}
-
-func toAPIMe(u *models.User) apiMe {
-	return apiMe{apiUser: toAPIUser(u), PushoverUserKey: nullString(u.PushoverUserKey.String, u.PushoverUserKey.Valid)}
 }
 
 type apiProject struct {
@@ -362,7 +348,6 @@ func (h *Handlers) APIStatus(w http.ResponseWriter, r *http.Request) {
 		"name":               "TodoStuff",
 		"api_version":        1,
 		"needs_setup":        count == 0,
-		"pushover_available": h.Pushover != nil && h.Pushover.Enabled(),
 		"timezone":           serverTimezone(),
 		"utc_offset_seconds": offset,
 		"server_time":        now.UTC(),
@@ -390,7 +375,7 @@ func serverTimezone() string {
 type apiSessionResponse struct {
 	Token     string    `json:"token"`
 	ExpiresAt time.Time `json:"expires_at"`
-	User      apiMe     `json:"user"`
+	User      apiUser   `json:"user"`
 }
 
 // APISetup handles POST /api/v1/setup — the JSON twin of /setup. Only works
@@ -462,7 +447,7 @@ func (h *Handlers) issueSession(w http.ResponseWriter, r *http.Request, user *mo
 	writeJSON(w, status, apiSessionResponse{
 		Token:     sess.ID,
 		ExpiresAt: sess.ExpiresAt.UTC(),
-		User:      toAPIMe(user),
+		User:      toAPIUser(user),
 	})
 }
 

@@ -19,7 +19,6 @@ services:
       - todostuff_data:/data
     environment:
       DATABASE_PATH: /data/todostuff.db
-      PUSHOVER_APP_TOKEN: ${PUSHOVER_APP_TOKEN:-}
       COOKIE_SECURE: ${COOKIE_SECURE:-false}
       TZ: ${TZ:-UTC}
     restart: unless-stopped

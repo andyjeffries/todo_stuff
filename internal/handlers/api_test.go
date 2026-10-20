@@ -12,7 +12,6 @@ import (
 
 	"github.com/andyjessop/todostuff/internal/auth"
 	"github.com/andyjessop/todostuff/internal/database"
-	"github.com/andyjessop/todostuff/internal/notifications"
 	"github.com/andyjessop/todostuff/internal/services"
 	"github.com/andyjessop/todostuff/migrations"
 	"github.com/go-chi/chi/v5"
@@ -29,8 +28,7 @@ func newAPIServer(t *testing.T) http.Handler {
 	if err := database.Migrate(db, migrations.FS); err != nil {
 		t.Fatal(err)
 	}
-	h := New(auth.NewService(db, false), services.NewTasks(db), services.NewProjects(db),
-		notifications.NewPushover(""), nil)
+	h := New(auth.NewService(db, false), services.NewTasks(db), services.NewProjects(db), nil)
 	r := chi.NewRouter()
 	r.Mount("/api/v1", h.APIRouter())
 	return r
@@ -133,7 +131,7 @@ func TestAPIAuthAndSetup(t *testing.T) {
 	if code, _ := anon.do("POST", "/setup", obj{"email": "x@y.z", "password": "password1", "name": "X"}); code != 409 {
 		t.Fatalf("second setup: %d, want 409", code)
 	}
-	if me := admin.must(200, "GET", "/me", nil); me["is_admin"] != true || me["pushover_user_key"] != nil {
+	if me := admin.must(200, "GET", "/me", nil); me["is_admin"] != true {
 		t.Fatalf("me: %v", me)
 	}
 
@@ -160,22 +158,15 @@ func TestAPIAuthAndSetup(t *testing.T) {
 	}
 
 	// Profile + password.
-	me := admin.must(200, "PATCH", "/me", obj{"name": "Boss", "pushover_user_key": "ukey"})
-	if me["name"] != "Boss" || me["pushover_enabled"] != true || me["pushover_user_key"] != "ukey" {
+	me := admin.must(200, "PATCH", "/me", obj{"name": "Boss"})
+	if me["name"] != "Boss" {
 		t.Fatalf("patch me: %v", me)
-	}
-	me = admin.must(200, "PATCH", "/me", obj{"pushover_user_key": nil})
-	if me["name"] != "Boss" || me["pushover_enabled"] != false || me["pushover_user_key"] != nil {
-		t.Fatalf("clear pushover: %v", me)
 	}
 	if _, out := admin.do("POST", "/me/password", obj{"current_password": "wrong", "new_password": "password2"}); errCode(out) != "incorrect_password" {
 		t.Fatalf("wrong current password: %v", out)
 	}
 	admin.must(204, "POST", "/me/password", obj{"current_password": "password1", "new_password": "password2"})
 	anon.must(200, "POST", "/auth/login", obj{"email": "admin@example.com", "password": "password2"})
-	if _, out := admin.do("POST", "/me/pushover/test", nil); errCode(out) != "pushover_unavailable" {
-		t.Fatalf("pushover test without server token: %v", out)
-	}
 }
 
 func TestAPIRequestValidation(t *testing.T) {
@@ -401,9 +392,6 @@ func TestAPIAdmin(t *testing.T) {
 
 	u := admin.must(201, "POST", "/admin/users", obj{"email": "u@example.com", "password": "password1", "name": "U"})
 	uID := u["id"].(string)
-	if _, ok := u["pushover_user_key"]; ok {
-		t.Fatal("admin view leaks pushover key")
-	}
 	if _, out := admin.do("POST", "/admin/users", obj{"email": "u@example.com", "password": "password1", "name": "U2"}); errCode(out) != "email_taken" {
 		t.Fatalf("duplicate email: %v", out)
 	}

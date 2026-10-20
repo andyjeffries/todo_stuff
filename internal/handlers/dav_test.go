@@ -18,7 +18,6 @@ import (
 	"github.com/andyjessop/todostuff/internal/caldav"
 	"github.com/andyjessop/todostuff/internal/database"
 	"github.com/andyjessop/todostuff/internal/models"
-	"github.com/andyjessop/todostuff/internal/notifications"
 	"github.com/andyjessop/todostuff/internal/services"
 	"github.com/andyjessop/todostuff/migrations"
 	"github.com/go-chi/chi/v5"
@@ -63,7 +62,7 @@ func newDAVEnv(t *testing.T) *davEnv {
 	if err != nil {
 		t.Fatal(err)
 	}
-	h := New(authSvc, tasks, projects, notifications.NewPushover(""), nil)
+	h := New(authSvc, tasks, projects, nil)
 	r := chi.NewRouter()
 	dav := h.DAVHandler()
 	r.Handle("/dav", dav)
