@@ -182,10 +182,55 @@
     <dd class="font-mono text-base font-semibold text-stone-900 dark:text-stone-100 select-all">{{.NewAppPassword}}</dd>
   </dl>
   <p class="mt-2 text-xs text-stone-500 dark:text-stone-400">
-    On the device: Settings → Apps → Reminders → Reminders Accounts → Add Account → Other → Add CalDAV Account.
-    When it says it can't connect using SSL, carry on without it.
+    Enter these on the device now, following the steps below.
   </p>
   {{end}}
+
+  {{$em := "font-medium text-stone-800 dark:text-stone-200"}}
+  <details {{if or .NewAppPassword (not .AppPasswords)}}open{{end}}
+           class="mt-5 rounded-lg border border-stone-200 dark:border-stone-600 bg-stone-50 dark:bg-stone-700 p-3 text-sm">
+    <summary class="cursor-pointer font-medium text-stone-800 dark:text-stone-200">How to set up an iPhone or iPad</summary>
+    <div class="mt-3 space-y-4 text-stone-600 dark:text-stone-400">
+      <p>Do this once on <span class="{{$em}}">each</span> device: accounts like this aren't shared through iCloud. Give each device its own app password.</p>
+
+      <div>
+        <h3 class="font-medium text-stone-800 dark:text-stone-200">1. Add the account</h3>
+        <ol class="mt-1 ml-5 list-decimal space-y-1">
+          <li>Create an app password above, named after the device.</li>
+          <li>Be on the home Wi-Fi, or switch the VPN on.</li>
+          <li>Open <span class="{{$em}}">Settings → Apps → Reminders → Reminders Accounts → Add Account → Other → Add CalDAV Account</span>.
+              (If the menus have moved, search Settings for "CalDAV".)</li>
+          <li>Server <span class="font-mono {{$em}}">{{.DAVServer}}</span>, User Name <span class="font-mono {{$em}}">{{.User.Email}}</span>,
+              Password the app password, Description <span class="{{$em}}">TodoStuff</span>.</li>
+          <li>When it says it can't connect using SSL, choose to <span class="{{$em}}">continue without SSL</span>. It only asks once.</li>
+          <li>If it won't verify: open the account's <span class="{{$em}}">Advanced Settings</span>, turn SSL off and set the port to
+              <span class="font-mono {{$em}}">{{.DAVPort}}</span>.</li>
+          <li>On the account's screen, switch <span class="{{$em}}">Reminders</span> on (Calendars can stay off).</li>
+        </ol>
+      </div>
+
+      <div>
+        <h3 class="font-medium text-stone-800 dark:text-stone-200">2. Make it Siri's default list</h3>
+        <ol class="mt-1 ml-5 list-decimal space-y-1">
+          <li>Open <span class="{{$em}}">Settings → Apps → Reminders → Default List</span> and choose <span class="{{$em}}">Inbox</span> under TodoStuff.</li>
+          <li>Try it: "Hey Siri, remind me to test TodoStuff in two minutes". It should appear here within a minute.</li>
+          <li>Siri can also use a project by name: "add milk to my Shopping list".</li>
+        </ol>
+      </div>
+
+      <div>
+        <h3 class="font-medium text-stone-800 dark:text-stone-200">Good to know</h3>
+        <ul class="mt-1 ml-5 list-disc space-y-1">
+          <li>The phone sends changes straight away. Changes made here reach it when you open Reminders, or on its fetch schedule
+              (Settings → Apps → Calendar → Calendar Accounts → Fetch New Data).</li>
+          <li>Away from home without the VPN, changes wait on the phone and sync when it can reach this server again. Alarms still ring.</li>
+          <li>Moving a reminder to another list on the phone re-creates it as a new task here.</li>
+          <li>Lists are your projects: create, rename and delete them here, not on the phone. Completed reminders show for 30 days.</li>
+          <li>Lost a device? Revoke its app password above.</li>
+        </ul>
+      </div>
+    </div>
+  </details>
 
   {{if .AppPasswords}}
   <ul class="mt-5 divide-y divide-stone-100 dark:divide-stone-700 border-y border-stone-100 dark:border-stone-700">

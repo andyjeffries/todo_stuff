@@ -3,6 +3,7 @@ package handlers
 import (
 	"errors"
 	"log/slog"
+	"net"
 	"net/http"
 	"strings"
 
@@ -36,6 +37,7 @@ type profileViewData struct {
 	AppPasswords   []auth.AppPassword
 	NewAppPassword string // plaintext of the one just created, shown once
 	DAVServer      string // host:port to type into a CalDAV account
+	DAVPort        string // its port, for the device's Advanced Settings
 }
 
 // ProfilePage renders /profile (GET).
@@ -206,6 +208,7 @@ func (h *Handlers) renderProfileWith(w http.ResponseWriter, r *http.Request, sec
 		PushoverDisplayMode: mode,
 		NewAppPassword:      newAppPassword,
 		DAVServer:           r.Host,
+		DAVPort:             davPort(r),
 	}
 	if aps, err := h.Auth.ListAppPasswords(r.Context(), user.ID); err == nil {
 		data.AppPasswords = aps
@@ -217,4 +220,16 @@ func (h *Handlers) renderProfileWith(w http.ResponseWriter, r *http.Request, sec
 		slog.Error("render profile", "err", err)
 		http.Error(w, "internal error", http.StatusInternalServerError)
 	}
+}
+
+// davPort is the port a device should use: the one in the Host header, or
+// the scheme default when the page was reached without one.
+func davPort(r *http.Request) string {
+	if _, port, err := net.SplitHostPort(r.Host); err == nil {
+		return port
+	}
+	if r.TLS != nil {
+		return "443"
+	}
+	return "80"
 }
