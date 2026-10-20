@@ -17,19 +17,47 @@ import (
 // Completed" stays small rather than downloading years of history.
 const CalDAVCompletedWindow = 30 * 24 * time.Hour
 
-// collectionWhere scopes tasks to one CalDAV collection: a project, or the
-// Inbox (no project) when projectID is empty.
-func collectionWhere(projectID string) (string, []any) {
-	if projectID == "" {
-		return `t.project_id IS NULL`, nil
+// Tasks with no project are split over two CalDAV collections, mirroring
+// the smart lists: Inbox (no date) and Upcoming (dated). Every other
+// collection is a project, named by its id.
+const (
+	CalDAVInbox    = "inbox"
+	CalDAVUpcoming = "upcoming"
+)
+
+// CalDAVCollectionOf is the collection a task is listed in.
+func CalDAVCollectionOf(t *models.Task) string {
+	switch {
+	case t.ProjectID.Valid:
+		return t.ProjectID.String
+	case t.DueDate.Valid:
+		return CalDAVUpcoming
 	}
-	return `t.project_id = ?`, []any{projectID}
+	return CalDAVInbox
+}
+
+// IsCalDAVProjectless reports whether coll is one of the two no-project
+// collections. The server moves tasks between them on its own when their
+// date is set or cleared.
+func IsCalDAVProjectless(coll string) bool {
+	return coll == CalDAVInbox || coll == CalDAVUpcoming
+}
+
+// collectionWhere scopes tasks to one CalDAV collection.
+func collectionWhere(coll string) (string, []any) {
+	switch coll {
+	case CalDAVInbox:
+		return `t.project_id IS NULL AND t.due_date IS NULL`, nil
+	case CalDAVUpcoming:
+		return `t.project_id IS NULL AND t.due_date IS NOT NULL`, nil
+	}
+	return `t.project_id = ?`, []any{coll}
 }
 
 // ListForCalDAV returns a collection's open tasks plus the ones completed
 // within CalDAVCompletedWindow.
-func (t *Tasks) ListForCalDAV(ctx context.Context, userID, projectID string) ([]models.Task, error) {
-	where, args := collectionWhere(projectID)
+func (t *Tasks) ListForCalDAV(ctx context.Context, userID, coll string) ([]models.Task, error) {
+	where, args := collectionWhere(coll)
 	args = append([]any{userID}, args...)
 	args = append(args, t.now().Add(-CalDAVCompletedWindow))
 	rows, err := t.db.QueryContext(ctx, taskSelect+`
@@ -54,8 +82,8 @@ func (t *Tasks) ListForCalDAV(ctx context.Context, userID, projectID string) ([]
 // CollectionCTag is the CalendarServer getctag for one collection: it changes
 // whenever a task in it is added, edited, completed, moved out or deleted
 // (count catches the last two), or the project itself is renamed.
-func (t *Tasks) CollectionCTag(ctx context.Context, userID, projectID string) (string, error) {
-	where, args := collectionWhere(projectID)
+func (t *Tasks) CollectionCTag(ctx context.Context, userID, coll string) (string, error) {
+	where, args := collectionWhere(coll)
 	args = append([]any{userID}, args...)
 	var raw string
 	err := t.db.QueryRowContext(ctx, `
@@ -64,10 +92,10 @@ func (t *Tasks) CollectionCTag(ctx context.Context, userID, projectID string) (s
 	if err != nil {
 		return "", fmt.Errorf("collection ctag: %w", err)
 	}
-	if projectID != "" {
+	if !IsCalDAVProjectless(coll) {
 		var updated sql.NullString
 		err := t.db.QueryRowContext(ctx,
-			`SELECT updated_at FROM projects WHERE id = ? AND user_id = ?`, projectID, userID,
+			`SELECT updated_at FROM projects WHERE id = ? AND user_id = ?`, coll, userID,
 		).Scan(&updated)
 		if err != nil && !errors.Is(err, sql.ErrNoRows) {
 			return "", fmt.Errorf("collection ctag project: %w", err)

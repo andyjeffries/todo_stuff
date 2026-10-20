@@ -40,7 +40,6 @@ import (
 
 const (
 	davPrefix   = "/dav/"
-	davInbox    = "inbox"
 	davMaxBody  = 1 << 20
 	davTodoType = "text/calendar; charset=utf-8; component=VTODO"
 )
@@ -100,12 +99,15 @@ func objectHref(u *models.User, coll string, t *models.Task) string {
 	return collHref(u, coll) + url.PathEscape(t.CalDAVName())
 }
 
-// taskColl is the collection a task lives in.
-func taskColl(t *models.Task) string {
-	if t.ProjectID.Valid {
-		return t.ProjectID.String
-	}
-	return davInbox
+// taskColl is the collection a task is listed in.
+func taskColl(t *models.Task) string { return services.CalDAVCollectionOf(t) }
+
+// sameResource reports whether a task listed in coll is still addressable at
+// a path in pathColl. Inbox and Upcoming count as one: the server re-files a
+// task between them when its date changes, and a client that hasn't synced
+// yet still uses the old path.
+func sameResource(coll, pathColl string) bool {
+	return coll == pathColl || (services.IsCalDAVProjectless(coll) && services.IsCalDAVProjectless(pathColl))
 }
 
 // DAVHandler serves /dav/*, /.well-known/caldav and PROPFIND on /.
@@ -217,8 +219,8 @@ func (h *Handlers) davAuth(r *http.Request) (user *models.User, stale bool) {
 
 // davList is one list as a client sees it.
 type davList struct {
-	id        string // "inbox" or the project id
-	projectID string // "" for the inbox
+	id        string // "inbox", "upcoming" or the project id
+	projectID string // "" for inbox and upcoming
 	name      string
 	color     string
 	order     int
@@ -232,7 +234,7 @@ func (h *Handlers) davCollections(ctx context.Context, user *models.User) ([]dav
 	if err != nil {
 		return nil, err
 	}
-	out := []davList{{id: davInbox, name: "Inbox", color: "#78716C", order: 0}}
+	out := []davList{davInboxList, davUpcomingList}
 	for i, p := range projects {
 		out = append(out, davProjectCollection(&p, i))
 	}
@@ -244,13 +246,23 @@ func davProjectCollection(p *models.Project, i int) davList {
 	if p.Color.Valid && strings.HasPrefix(p.Color.String, "#") {
 		color = p.Color.String
 	}
-	return davList{id: p.ID, projectID: p.ID, name: p.Name, color: color, order: i + 1}
+	return davList{id: p.ID, projectID: p.ID, name: p.Name, color: color, order: i + 2}
 }
+
+var (
+	davInboxList    = davList{id: services.CalDAVInbox, name: "Inbox", color: "#78716C", order: 0}
+	davUpcomingList = davList{id: services.CalDAVUpcoming, name: "Upcoming", color: "#E11D48", order: 1}
+)
 
 // davResolveColl finds the collection named in a path, or nil.
 func (h *Handlers) davResolveColl(ctx context.Context, user *models.User, id string) (*davList, error) {
-	if id == davInbox {
-		return &davList{id: davInbox, name: "Inbox", color: "#78716C"}, nil
+	switch id {
+	case services.CalDAVInbox:
+		l := davInboxList
+		return &l, nil
+	case services.CalDAVUpcoming:
+		l := davUpcomingList
+		return &l, nil
 	}
 	cols, err := h.davCollections(ctx, user)
 	if err != nil {
@@ -316,7 +328,7 @@ func (h *Handlers) davPropfind(w http.ResponseWriter, r *http.Request, user *mod
 		}
 		out = append(out, pick(collHref(user, c.id), props, names, allprop))
 		if depth1 {
-			tasks, err := h.Tasks.ListForCalDAV(ctx, user.ID, c.projectID)
+			tasks, err := h.Tasks.ListForCalDAV(ctx, user.ID, c.id)
 			if err != nil {
 				davInternal(w, "list tasks", err)
 				return
@@ -425,7 +437,7 @@ func (h *Handlers) davHomeProps(user *models.User) davProps {
 }
 
 func (h *Handlers) davCollectionProps(ctx context.Context, user *models.User, c *davList) (davProps, error) {
-	ctag, err := h.Tasks.CollectionCTag(ctx, user.ID, c.projectID)
+	ctag, err := h.Tasks.CollectionCTag(ctx, user.ID, c.id)
 	if err != nil {
 		return nil, err
 	}
@@ -527,7 +539,7 @@ func (h *Handlers) davReport(w http.ResponseWriter, r *http.Request, user *model
 			return
 		}
 		match := davQueryFilter(body)
-		tasks, err := h.Tasks.ListForCalDAV(ctx, user.ID, c.projectID)
+		tasks, err := h.Tasks.ListForCalDAV(ctx, user.ID, c.id)
 		if err != nil {
 			davInternal(w, "list tasks", err)
 			return
@@ -621,7 +633,8 @@ func (h *Handlers) davGet(w http.ResponseWriter, r *http.Request, user *models.U
 }
 
 // davFindObject returns the task at a collection/name path, or nil when the
-// name is unknown or the task now lives in another collection.
+// name is unknown or the task now lives in another collection (Inbox and
+// Upcoming excepted, see sameResource).
 func (h *Handlers) davFindObject(ctx context.Context, user *models.User, p davPath) (*models.Task, error) {
 	t, err := h.Tasks.GetByCalDAVName(ctx, user.ID, p.name)
 	if errors.Is(err, services.ErrTaskNotFound) {
@@ -630,7 +643,7 @@ func (h *Handlers) davFindObject(ctx context.Context, user *models.User, p davPa
 	if err != nil {
 		return nil, err
 	}
-	if taskColl(t) != p.coll {
+	if !sameResource(taskColl(t), p.coll) {
 		return nil, nil
 	}
 	return t, nil
@@ -868,7 +881,7 @@ func (h *Handlers) davDelete(w http.ResponseWriter, r *http.Request, user *model
 		davInternal(w, "find object", err)
 		return
 	}
-	if taskColl(t) != p.coll {
+	if !sameResource(taskColl(t), p.coll) {
 		// A move: the client PUT the task into its new list first and is now
 		// removing the old copy, which no longer exists here.
 		w.WriteHeader(http.StatusNoContent)

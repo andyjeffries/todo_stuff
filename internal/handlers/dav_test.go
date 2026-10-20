@@ -168,8 +168,8 @@ func TestDAVDiscovery(t *testing.T) {
 
 func TestDAVPutGetCompleteDelete(t *testing.T) {
 	e := newDAVEnv(t)
-	inbox := e.coll("inbox")
-	_, before, _ := e.do("PROPFIND", inbox, propfindAll, "Depth", "0")
+	inbox, upcoming := e.coll("inbox"), e.coll("upcoming")
+	_, before, _ := e.do("PROPFIND", upcoming, propfindAll, "Depth", "0")
 
 	body := vtodo("IOS-1", "Call the bank",
 		"DTSTART;TZID=Europe/London:20261020T150000",
@@ -195,7 +195,8 @@ func TestDAVPutGetCompleteDelete(t *testing.T) {
 		t.Fatalf("If-None-Match on existing: %d", code)
 	}
 
-	_, after, _ := e.do("PROPFIND", inbox, propfindAll, "Depth", "0")
+	// Dated, so it's listed under Upcoming even though it was PUT into the Inbox.
+	_, after, _ := e.do("PROPFIND", upcoming, propfindAll, "Depth", "0")
 	if ctag(before) == ctag(after) {
 		t.Fatal("getctag didn't change after a PUT")
 	}
@@ -223,12 +224,12 @@ func TestDAVPutGetCompleteDelete(t *testing.T) {
 	// leaves it out; a plain one doesn't.
 	open := `<c:calendar-query xmlns:d="DAV:" xmlns:c="urn:ietf:params:xml:ns:caldav"><d:prop><d:getetag/></d:prop>
 <c:filter><c:comp-filter name="VCALENDAR"><c:comp-filter name="VTODO"><c:prop-filter name="COMPLETED"><c:is-not-defined/></c:prop-filter></c:comp-filter></c:comp-filter></c:filter></c:calendar-query>`
-	if _, q, _ := e.do("REPORT", inbox, open, "Depth", "1"); strings.Contains(q, "IOS-1.ics") {
+	if _, q, _ := e.do("REPORT", upcoming, open, "Depth", "1"); strings.Contains(q, "IOS-1.ics") {
 		t.Fatalf("open-only query returned a completed task:\n%s", q)
 	}
 	all := `<c:calendar-query xmlns:d="DAV:" xmlns:c="urn:ietf:params:xml:ns:caldav"><d:prop><d:getetag/></d:prop>
 <c:filter><c:comp-filter name="VCALENDAR"><c:comp-filter name="VTODO"/></c:comp-filter></c:filter></c:calendar-query>`
-	_, q, _ := e.do("REPORT", inbox, all, "Depth", "1")
+	_, q, _ := e.do("REPORT", upcoming, all, "Depth", "1")
 	mustContain(t, q, "IOS-1.ics")
 
 	if code, _, _ := e.do(http.MethodDelete, inbox+"IOS-1.ics", ""); code != 204 {
@@ -464,4 +465,57 @@ func mustRead(t *testing.T, file string) string {
 		t.Fatal(err)
 	}
 	return string(b)
+}
+
+// TestDAVInboxUpcomingSplit: tasks without a project are listed as Inbox
+// (no date) or Upcoming (dated), like the smart lists, and move between the
+// two as their date changes, whichever of the two paths the client uses.
+func TestDAVInboxUpcomingSplit(t *testing.T) {
+	e := newDAVEnv(t)
+	inbox, upcoming := e.coll("inbox"), e.coll("upcoming")
+	listed := func(coll, name string) bool {
+		_, body, _ := e.do("PROPFIND", coll, propfindAll, "Depth", "1")
+		return strings.Contains(body, "<d:href>"+coll+name+"</d:href>")
+	}
+
+	_, home, _ := e.do("PROPFIND", "/dav/calendars/"+e.user.ID+"/", propfindAll, "Depth", "1")
+	mustContain(t, home, "<d:displayname>Inbox</d:displayname>", "<d:displayname>Upcoming</d:displayname>")
+
+	// Siri adds a timed reminder to the default list (Inbox): it's re-filed
+	// under Upcoming, but its Inbox path keeps working until the client syncs.
+	dated := vtodo("S-1", "MOT due", "DUE;VALUE=DATE:20261101")
+	if code, _, _ := e.do(http.MethodPut, inbox+"S-1.ics", dated); code != 201 {
+		t.Fatalf("create: %d", code)
+	}
+	if listed(inbox, "S-1.ics") || !listed(upcoming, "S-1.ics") {
+		t.Fatal("dated task should be listed under Upcoming only")
+	}
+	if code, _, _ := e.do(http.MethodGet, inbox+"S-1.ics", ""); code != 200 {
+		t.Fatalf("old Inbox path: %d", code)
+	}
+
+	// Clearing the date moves it back.
+	if code, _, _ := e.do(http.MethodPut, upcoming+"S-1.ics", vtodo("S-1", "MOT due")); code != 204 {
+		t.Fatalf("undate: %d", code)
+	}
+	if !listed(inbox, "S-1.ics") || listed(upcoming, "S-1.ics") {
+		t.Fatal("undated task should be listed under Inbox only")
+	}
+
+	// Deleting through the stale path still deletes.
+	if code, _, _ := e.do(http.MethodDelete, upcoming+"S-1.ics", ""); code != 204 {
+		t.Fatalf("delete: %d", code)
+	}
+	if _, err := e.tasks.GetByCalDAVUID(context.Background(), e.user.ID, "S-1"); err == nil {
+		t.Fatal("task survived DELETE through the Upcoming path")
+	}
+
+	// A project's tasks stay in the project, dated or not.
+	p, _ := e.projects.Create(context.Background(), e.user.ID, services.CreateProjectParams{Name: "Car"})
+	if code, _, _ := e.do(http.MethodPut, e.coll(p.ID)+"S-2.ics", vtodo("S-2", "Tyres", "DUE;VALUE=DATE:20261101")); code != 201 {
+		t.Fatalf("project task: %d", code)
+	}
+	if !listed(e.coll(p.ID), "S-2.ics") || listed(upcoming, "S-2.ics") {
+		t.Fatal("dated project task should stay in its project")
+	}
 }
