@@ -201,7 +201,8 @@
           <li>Open <span class="{{$em}}">Settings → Apps → Reminders → Reminders Accounts → Add Account → Other → Add CalDAV Account</span>.
               (If the menus have moved, search Settings for "CalDAV".)</li>
           <li>Server <span class="font-mono {{$em}}">{{.DAVServer}}</span>, User Name <span class="font-mono {{$em}}">{{.User.Email}}</span>,
-              Password the app password, Description <span class="{{$em}}">TodoStuff</span>.</li>
+              Password the app password, Description <span class="{{$em}}">TodoStuff</span>.
+              If the phone can't find that name (over the VPN, say), use the server's IP address instead.</li>
           <li>When it says it can't connect using SSL, choose to <span class="{{$em}}">continue without SSL</span>. It only asks once.</li>
           <li>If it won't verify: open the account's <span class="{{$em}}">Advanced Settings</span>, turn SSL off and set the port to
               <span class="font-mono {{$em}}">{{.DAVPort}}</span>.</li>
