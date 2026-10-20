@@ -246,12 +246,14 @@ func davProjectCollection(p *models.Project, i int) davList {
 	if p.Color.Valid && strings.HasPrefix(p.Color.String, "#") {
 		color = p.Color.String
 	}
-	return davList{id: p.ID, projectID: p.ID, name: p.Name, color: color, order: i + 2}
+	return davList{id: p.ID, projectID: p.ID, name: p.Name, color: color, order: i + 3}
 }
 
+// calendar-order starts at 1: iOS sorts an order of 0 as unset, after
+// every other list.
 var (
-	davInboxList    = davList{id: services.CalDAVInbox, name: "Inbox", color: "#78716C", order: 0}
-	davUpcomingList = davList{id: services.CalDAVUpcoming, name: "Upcoming", color: "#E11D48", order: 1}
+	davInboxList    = davList{id: services.CalDAVInbox, name: "Inbox", color: "#78716C", order: 1}
+	davUpcomingList = davList{id: services.CalDAVUpcoming, name: "Upcoming", color: "#E11D48", order: 2}
 )
 
 // davResolveColl finds the collection named in a path, or nil.

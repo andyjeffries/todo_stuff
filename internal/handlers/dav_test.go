@@ -519,3 +519,33 @@ func TestDAVInboxUpcomingSplit(t *testing.T) {
 		t.Fatal("dated project task should stay in its project")
 	}
 }
+
+// TestDAVListOrder: Inbox, Upcoming, then projects in sidebar order, numbered
+// from 1 because iOS sorts a calendar-order of 0 after everything else.
+func TestDAVListOrder(t *testing.T) {
+	e := newDAVEnv(t)
+	ctx := context.Background()
+	for _, n := range []string{"Work", "Home"} {
+		if _, err := e.projects.Create(ctx, e.user.ID, services.CreateProjectParams{Name: n}); err != nil {
+			t.Fatal(err)
+		}
+	}
+	q := `<d:propfind xmlns:d="DAV:" xmlns:ic="http://apple.com/ns/ical/"><d:prop><d:displayname/><ic:calendar-order/></d:prop></d:propfind>`
+	_, body, _ := e.do("PROPFIND", "/dav/calendars/"+e.user.ID+"/", q, "Depth", "1")
+	order := map[string]string{}
+	for _, resp := range strings.Split(body, "<d:response>")[1:] {
+		_, name, _ := strings.Cut(resp, "<d:displayname>")
+		name, _, _ = strings.Cut(name, "<")
+		_, o, ok := strings.Cut(resp, "<ic:calendar-order>")
+		if ok {
+			o, _, _ = strings.Cut(o, "<")
+			order[name] = o
+		}
+	}
+	want := map[string]string{"Inbox": "1", "Upcoming": "2", "Work": "3", "Home": "4"}
+	for n, o := range want {
+		if order[n] != o {
+			t.Fatalf("calendar-order: got %v, want %v", order, want)
+		}
+	}
+}
